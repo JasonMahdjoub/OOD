@@ -37,10 +37,10 @@ package com.distrimind.ood.interpreter;
 
 import com.distrimind.ood.database.exceptions.DatabaseSyntaxException;
 import com.distrimind.ood.database.exceptions.ImpossibleQueryInterpretation;
-import com.distrimind.ood.database.exceptions.UnrecognizedSymbolException;
 import com.distrimind.util.Reference;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 
@@ -66,114 +66,17 @@ public class Interpreter {
 	public static RuleInstance getRuleInstance(String whereCommand) throws DatabaseSyntaxException {
 		if (whereCommand == null)
 			throw new NullPointerException("whereCommand");
-		ArrayList<QueryPart> qp = getRules(lexicalAnalysis(whereCommand));
-		return getQuery(whereCommand, qp);
-	}
-	/*
-	 * public static <T extends DatabaseRecord> boolean isConcernedBy(String
-	 * whereCommand,Table<T> table, Map<String, Object> parameters, T record) throws
-	 * DatabaseSyntaxException { ArrayList<QueryPart>
-	 * qp=getRules(lexicalAnalyse(whereCommand)); RuleInstance
-	 * query=getQuery(whereCommand, qp); return query.isConcernedBy(table,
-	 * parameters, record); }
-	 */
-
-	private static String preProcess(String command) {
-		command = command.replaceAll("\\p{Blank}([Nn])([Oo])([Tt])\\p{Blank}([Ll])([Ii])([Kk])([Ee])\\p{Blank}", " NOT_LIKE ");
-		command = command.replaceAll("\\p{Blank}([Ii])([Ss])\\p{Blank}([Nn])([Oo])([Tt])\\p{Blank}", " IS_NOT ");
-		command = command.replaceAll("\\p{Blank}([Nn])([Oo])([Tt])\\p{Blank}([Ii])([Nn])\\p{Blank}", " NOT_IN ");
-
-		StringBuilder sb = new StringBuilder();
-
-		int index = 0;
-		while (index < command.length()) {
-
-			String bestMatch = null;
-			SymbolType bestSymbol = null;
-			for (SymbolType s : SymbolType.values()) {
-				if (!s.isOperator())
-					continue;
-
-				for (String symbol : s.getMatches()) {
-					boolean ok = true;
-
-					for (int i = 0; i < symbol.length(); i++) {
-						if (Character.toUpperCase(command.charAt(index + i)) !=
-								Character.toUpperCase(symbol.charAt(i))) {
-							ok = false;
-							break;
-						}
-					}
-					if (ok) {
-						if (bestMatch == null || bestMatch.length() < symbol.length()) {
-							bestMatch = symbol;
-							bestSymbol = s;
-						}
-
-					}
-				}
-			}
-			if (bestMatch != null) {
-				boolean space = bestSymbol != SymbolType.LIKE && bestSymbol != SymbolType.NOT_LIKE
-						&& bestSymbol!=SymbolType.IS && bestSymbol!=SymbolType.IS_NOT
-						&& bestSymbol!=SymbolType.IN && bestSymbol!=SymbolType.NOT_IN;
-				if (space)
-					sb.append(" ");
-				sb.append(bestMatch);
-				if (space)
-					sb.append(" ");
-				index += bestMatch.length();
-			} else {
-				sb.append(command.charAt(index));
-				index++;
-			}
-		}
-		return sb.toString();
-	}
-
-	private static ArrayList<Symbol> lexicalAnalysis(String command) throws UnrecognizedSymbolException {
-		command = preProcess(command);
-		String[] sls = command.split(" ");
-		ArrayList<Symbol> symbols = new ArrayList<>(sls.length);
-		for (String s : sls) {
-			String st = s.trim();
-			if (st.isEmpty())
-				continue;
-			Symbol symbol = SymbolType.getSymbol(st);
-			if (symbol == null)
-				throw new UnrecognizedSymbolException(st);
-
-			symbols.add(symbol);
-
-		}
-		return symbols;
-	}
-
-	private static ArrayList<QueryPart> getRules(ArrayList<Symbol> symbols) {
-		ArrayList<QueryPart> res = new ArrayList<>(symbols.size());
-		for (Symbol s : symbols) {
-			RuleInstance r = s.getRule();
-
-			if (r != null) {
-				res.add(r);
-			} else
-				res.add(s);
-		}
-		return res;
-	}
-
-	private static RuleInstance getQuery(String command, ArrayList<QueryPart> parts) throws DatabaseSyntaxException {
+		List<RuleInstance> parts=getRuleInstances(whereCommand);
 		if (parts.size() == 0)
-			throw new ImpossibleQueryInterpretation(command);
+			throw new ImpossibleQueryInterpretation(whereCommand);
 
 		int level = Rule.getLowerPriorLevel();
 		ml:
 		while (level<Rule.values().length
-				&& (parts.size() > 1 || (!parts.isEmpty() && (!(parts.get(0) instanceof RuleInstance)
-				|| ((RuleInstance) parts.get(0)).getRule() != Rule.QUERY)))) {
+				&& (parts.size() > 1 || (!parts.isEmpty() && (parts.get(0)).getRule() != Rule.QUERY))) {
 
-			ArrayList<QueryPart> p;
-			while ((p= getNewQueryParts(command, parts, level))!=null) {
+			ArrayList<RuleInstance> p;
+			while ((p= getNewQueryParts(whereCommand, parts, level))!=null) {
 				parts = p;
 				if (level!=Rule.getLowerPriorLevel()) {
 					level = Rule.getLowerPriorLevel();
@@ -186,18 +89,66 @@ public class Interpreter {
 				level++;
 		}
 		if (parts.isEmpty())
-			throw new ImpossibleQueryInterpretation(command);
+			throw new ImpossibleQueryInterpretation(whereCommand);
 
-		QueryPart ri = parts.get(0);
-		if (!(ri instanceof RuleInstance))
-			throw new ImpossibleQueryInterpretation(command);
-		RuleInstance res = (RuleInstance) ri;
+		RuleInstance res = parts.get(0);
 		if (res.getRule() != Rule.QUERY) {
-			throw new ImpossibleQueryInterpretation(command);
+			throw new ImpossibleQueryInterpretation(whereCommand);
 		}
 		return res;
 	}
-	private static ArrayList<QueryPart> getNewQueryParts(String command, ArrayList<QueryPart> parts, int level)
+	/*
+	 * public static <T extends DatabaseRecord> boolean isConcernedBy(String
+	 * whereCommand,Table<T> table, Map<String, Object> parameters, T record) throws
+	 * DatabaseSyntaxException { ArrayList<QueryPart>
+	 * qp=getRules(lexicalAnalyse(whereCommand)); RuleInstance
+	 * query=getQuery(whereCommand, qp); return query.isConcernedBy(table,
+	 * parameters, record); }
+	 */
+
+	private static List<RuleInstance> getRuleInstances(String command) throws DatabaseSyntaxException {
+		ArrayList<RuleInstance> rules=new ArrayList<>();
+
+		int index = 0;
+		while (index < command.length()) {
+
+			CharSequence cs = command.subSequence(index, command.length());
+			int bestMatchLength = -1;
+			SymbolType bestSymbol = null;
+			for (SymbolType s : SymbolType.values()) {
+
+				int p = s.match(cs);
+
+				if (p > 0) {
+					if (p>1 && cs.charAt(p-1)==')')
+						--p;
+					if (bestMatchLength == -1 || bestMatchLength < p || bestSymbol==SymbolType.IDENTIFIER) {
+						bestMatchLength = p;
+						bestSymbol = s;
+					}
+				}
+			}
+			if (bestMatchLength==-1) {
+				if (command.charAt(index)==' ')
+				{
+					++index;
+					continue;
+				}
+				throw new DatabaseSyntaxException("Incomprehensible command part : " + cs);
+			}
+
+			Symbol symbol=new Symbol(bestSymbol, bestSymbol==SymbolType.PARAMETER?cs.subSequence(1, bestMatchLength).toString():cs.subSequence(0, bestMatchLength).toString());
+			rules.add(symbol.getRule());
+			index+=bestMatchLength;
+		}
+		return rules;
+	}
+
+
+
+
+
+	private static ArrayList<RuleInstance> getNewQueryParts(String command, List<RuleInstance> parts, int level)
 			throws DatabaseSyntaxException {
 		if (parts.size() == 0)
 			throw new DatabaseSyntaxException("No rules");
@@ -205,18 +156,20 @@ public class Interpreter {
 			throw new NullPointerException("command");
 
 		Reference<Integer> index = new Reference<>(0);
-		ArrayList<QueryPart> res = new ArrayList<>(parts.size());
+		ArrayList<RuleInstance> res = new ArrayList<>(parts.size());
 		boolean changed = false;
 
 		while (index.get() < parts.size()) {
 			int previousIndex=index.get();
 
-			QueryPart ap = getQuery(parts, index.get(), index, level);
+			RuleInstance ap = getQuery(parts, index.get(), index, level);
 
 			if (ap == null) {
 				ap=parts.get(index.get());
 				index.set(index.get()+1);
 			} else {
+				if (ap.getParts().size()==1 && ap.getParts().get(0) instanceof RuleInstance && ap.getRule()==((RuleInstance) ap.getParts().get(0)).getRule())
+					throw new IllegalAccessError(ap.getRule()+" ; "+ap.getParts().get(0));
 				changed = true;
 			}
 			res.add(ap);
@@ -232,7 +185,7 @@ public class Interpreter {
 				return null;
 		}
 	}
-	static String toString(ArrayList<QueryPart> parts)
+	static String toString(List<? extends QueryPart> parts)
 	{
 		int l=0;
 		StringBuilder res=new StringBuilder("Syntax tree = \n\t");
@@ -241,17 +194,52 @@ public class Interpreter {
 			res.append("\n\t");
 			++l;
 		}
+		res.append("\n\t");
+		toStringSymbols(parts, res);
+		res.append("\n\t");
+		toStringSymbolsContent(parts, res);
+		res.append("\n\t");
 		return res.toString();
 	}
-	private static boolean toString(ArrayList<QueryPart> parts, int level, StringBuilder res)
+	private static void toStringSymbols(List<? extends QueryPart> parts, StringBuilder res)
+	{
+		for (QueryPart qp : parts)
+		{
+			if (qp instanceof Symbol) {
+				res.append("<")
+						.append(((Symbol) qp).getType().name())
+						.append(">");
+			}
+			else if (qp instanceof RuleInstance)
+			{
+				RuleInstance ri=(RuleInstance) qp;
+				toStringSymbols(ri.getParts(), res);
+			}
+		}
+	}
+	static void toStringSymbolsContent(List<? extends QueryPart> parts, StringBuilder res)
+	{
+		for (QueryPart qp : parts)
+		{
+			if (qp instanceof Symbol) {
+				if (((Symbol) qp).getType()==SymbolType.PARAMETER)
+					res.append("%");
+				res.append(qp.getContent());
+			}
+			else if (qp instanceof RuleInstance)
+			{
+				RuleInstance ri=(RuleInstance) qp;
+				toStringSymbolsContent(ri.getParts(), res);
+			}
+		}
+	}
+	private static boolean toString(List<? extends QueryPart> parts, int level, StringBuilder res)
 	{
 		boolean hasSubLevel=false;
 		for (QueryPart qp : parts)
 		{
 			if (qp instanceof Symbol) {
 				Symbol s=(Symbol) qp;
-				if (s.getType()!=SymbolType.CLOSE_PARENTHESIS && s.getType()!=SymbolType.OPEN_PARENTHESIS)
-					throw new IllegalAccessError(s.getType().name());
 				res.append("<")
 						.append(((Symbol) qp).getType().name())
 						.append(">");
@@ -276,43 +264,42 @@ public class Interpreter {
 	}
 
 
-	private static RuleInstance getQuery(ArrayList<QueryPart> parts, int index,
+	private static RuleInstance getQuery(List<RuleInstance> parts, int index,
 										 Reference<Integer> newIndex, int level) {
 
-		Rule chosenValidRule = null;
+		Rule bestRule=null;
+		int bestRulePartsLength=-1;
+		for (Rule r : Rule.getNonSymbolRules()) {
+			if (r.ordinal() > level)
+				continue;
 
-		StringBuilder currentRule = new StringBuilder();
-		int len = 0;
-
-		for (int i = index; i < parts.size(); i++) {
-			boolean valid = true;
-
-			Rule chosenRule = null;
-			currentRule.append(parts.get(i).getBackusNaurNotation());
-
-			String rc = currentRule.toString();
-			for (Rule r : Rule.values()) {
-				if (r.ordinal()>level)
-					continue;
-				if (r.match(rc)) {
-					if (chosenRule != null) {
-						valid = false;
-						break;
+			for (Rule[] ruleComposition : r.getRulesComposition()) {
+				if (parts.size() - index >= ruleComposition.length) {
+					boolean found = true;
+					for (int j = 0; j < ruleComposition.length; j++) {
+						if (ruleComposition[j] != parts.get(index + j).getRule()) {
+							found = false;
+							break;
+						}
 					}
-					chosenRule = r;
+					if (found && (bestRule == null || bestRulePartsLength <= ruleComposition.length)) {
+						/*if (bestRule!=null)
+							return null;*/
+						if (bestRulePartsLength == ruleComposition.length) {
+							return null;
+						}
+						bestRule = r;
+						bestRulePartsLength = ruleComposition.length;
+					}
 				}
 			}
-			if (valid && chosenRule != null) {
-				chosenValidRule = chosenRule;
-				len = i - index + 1;
-			}
 		}
-		if (chosenValidRule == null) {
+		if (bestRule == null) {
 			return null;
 		}
 
-		newIndex.set(index + len);
-		return new RuleInstance(chosenValidRule, parts, index, len);
+		newIndex.set(index + bestRulePartsLength);
+		return new RuleInstance(bestRule, parts, index, bestRulePartsLength);
 	}
 
 }

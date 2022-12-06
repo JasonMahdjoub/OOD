@@ -3866,6 +3866,8 @@ public abstract class TestDatabase {
 		HashMap<Integer, Object> sqlParameters = new HashMap<>();
 
 		RuleInstance rule = Interpreter.getRuleInstance(command);
+		rule.circularCheck();
+
 		String sqlCommand = rule.translateToSqlQuery(table, parameters, sqlParameters, new HashSet<>())
 				.toString();
 		if (!table.getDatabaseWrapper().supportsItalicQuotesWithTableAndFieldNames()) {

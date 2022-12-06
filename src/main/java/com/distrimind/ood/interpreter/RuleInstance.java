@@ -53,11 +53,7 @@ import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 /**
@@ -69,9 +65,9 @@ import java.util.regex.Pattern;
 public class RuleInstance implements QueryPart {
 
 	private final Rule rule;
-	private final ArrayList<QueryPart> parts;
+	private final List<QueryPart> parts;
 
-	public RuleInstance(Rule rule, ArrayList<QueryPart> parts, int off, int len) {
+	public RuleInstance(Rule rule, List<? extends QueryPart> parts, int off, int len) {
 		if (rule == null)
 			throw new NullPointerException("rule");
 		this.rule = rule;
@@ -86,6 +82,19 @@ public class RuleInstance implements QueryPart {
 				"rule=" + rule +
 				", " +  Interpreter.toString(parts)+
 				'}';
+	}
+
+	public String revertQueryToString()
+	{
+		StringBuilder res=new StringBuilder();
+		Interpreter.toStringSymbolsContent(parts, res);
+		return res.toString();
+	}
+
+	public void circularCheck() throws DatabaseSyntaxException {
+		String rs=revertQueryToString();
+		RuleInstance ri2=Interpreter.getRuleInstance(rs);
+		assert rs.equals(ri2.revertQueryToString());
 	}
 
 	public RuleInstance(Rule rule, QueryPart part, QueryPart... parts) {
@@ -143,7 +152,7 @@ public class RuleInstance implements QueryPart {
 				else
 					return false;
 			}
-
+			case WORD:
 			case WORD_RULE: {
 				if (parts.size() == 1) {
 					return getSymbol().isMultiType(table, parameters);
@@ -182,6 +191,7 @@ public class RuleInstance implements QueryPart {
 				return "boolean";
 			case NULL_WORD:
 			case SIGNED_VALUE:
+			case WORD:
 			case WORD_RULE:
 				if (parts.size() == 1)
 					return parts.get(0).getValueType(table, parameters);
@@ -216,6 +226,7 @@ public class RuleInstance implements QueryPart {
 			case MULTIPLY_OPERATOR:
 				return true;
 			case SIGNED_VALUE:
+			case WORD:
 			case WORD_RULE:
 				if (parts.size() == 1)
 					return parts.get(0).isAlgebraic(table, parameters);
@@ -291,33 +302,26 @@ public class RuleInstance implements QueryPart {
 				}
 				else
 					throw new DatabaseSyntaxException("Cannot compute opposite value with type "+n.getClass().getName());
-			case WORD_RULE:
+			case WORD:
 				if (parts.size() == 1) {
-					if (parts.get(0) instanceof RuleInstance)
-					{
-						RuleInstance ri=(RuleInstance) parts.get(0);
-						if (ri.getRule()==Rule.SIGNED_VALUE)
-							return ri.getComparable(table, parameters, record);
-						else
-							throw new IllegalAccessError();
-					}
+
+
 					Symbol s = getSymbol();
 					if (s.getType() == SymbolType.IDENTIFIER) {
 						String fieldName = s.getSymbol();
 						HashSet<TableJunction> tablesJunction = new HashSet<>();
 						Table.FieldAccessorValue fav = table.getFieldAccessorAndValue(record, fieldName, tablesJunction);
-						if (fav == null || fav.getFieldAccessor()==null)
+						if (fav == null || fav.getFieldAccessor() == null)
 							throw new DatabaseSyntaxException(
 									"Cannot find field " + fieldName + " into table " + table.getClass().getSimpleName());
 
 						if (fav.getFieldAccessor().isComparable()) {
-							Object o=fav.getFieldAccessor().getValue(fav.getValue()/*getDatabaseRecord(fav.getFieldAccessor(), tablesJunction, record)*/);
+							Object o = fav.getFieldAccessor().getValue(fav.getValue()/*getDatabaseRecord(fav.getFieldAccessor(), tablesJunction, record)*/);
 							if (fav.getFieldAccessor().isAlgebraic())
 								return toBigDecimal(o);
 							else
 								return o;
-						}
-						else
+						} else
 							throw new DatabaseSyntaxException(
 									"The " + fieldName + " into table " + table.getClass().getSimpleName() + " is not comparable !");
 					} else if (s.getType() == SymbolType.PARAMETER) {
@@ -329,6 +333,20 @@ public class RuleInstance implements QueryPart {
 						return new BigDecimal(s.getSymbol());
 					else
 						throw new DatabaseSyntaxException("Cannot get comparable with type " + s.getType());
+				}
+				else
+					throw new DatabaseSyntaxException("" );
+			case WORD_RULE:
+
+				if (parts.size() == 1) {
+
+					if (parts.get(0) instanceof RuleInstance)
+					{
+						RuleInstance ri=(RuleInstance) parts.get(0);
+						return ri.getComparable(table, parameters, record);
+					}
+					else
+						throw new IllegalAccessError();
 				} else if (parts.size() == 3) {
 					return getRuleInstance(1).getNumber(table, parameters, record);
 				} else
@@ -429,16 +447,8 @@ public class RuleInstance implements QueryPart {
 					return n;
 				else
 					return n.negate();
-			case WORD_RULE:
+			case WORD:
 				if (parts.size() == 1) {
-					if (parts.get(0) instanceof RuleInstance)
-					{
-						RuleInstance ri=(RuleInstance) parts.get(0);
-						if (ri.getRule()==Rule.SIGNED_VALUE)
-							return ri.getAlgebraic(table, parameters, record);
-						else
-							throw new IllegalAccessError();
-					}
 					Symbol s = getSymbol();
 					if (s.getType() == SymbolType.IDENTIFIER) {
 						String fieldName = s.getSymbol();
@@ -474,6 +484,19 @@ public class RuleInstance implements QueryPart {
 						return new BigDecimal(s.getSymbol());
 					else
 						throw new DatabaseSyntaxException("Cannot get comparable with type " + s.getType());
+				}
+				else
+					throw new DatabaseSyntaxException(this.toString());
+			case WORD_RULE:
+				if (parts.size() == 1) {
+					if (parts.get(0) instanceof RuleInstance)
+					{
+						RuleInstance ri=(RuleInstance) parts.get(0);
+						return ri.getAlgebraic(table, parameters, record);
+					}
+					else
+						throw new DatabaseSyntaxException(this.toString());
+
 				} else if (parts.size() == 3) {
 					return getRuleInstance(1).getAlgebraic(table, parameters, record);
 				} else
@@ -509,16 +532,8 @@ public class RuleInstance implements QueryPart {
 				throw new IllegalAccessError();
 			case SIGNED_VALUE:
 				return getComparable(table, parameters, record);
-			case WORD_RULE:
+			case WORD:
 				if (parts.size() == 1) {
-					if (parts.get(0) instanceof RuleInstance)
-					{
-						RuleInstance ri=(RuleInstance) parts.get(0);
-						if (ri.getRule()==Rule.SIGNED_VALUE)
-							return ri.getEquallable(table, parameters, record);
-						else
-							throw new IllegalAccessError();
-					}
 					Symbol s = getSymbol();
 					if (s.getType() == SymbolType.IDENTIFIER) {
 						String fieldName = s.getSymbol();
@@ -536,6 +551,19 @@ public class RuleInstance implements QueryPart {
 						return null;
 					else
 						return new BigDecimal(s.getSymbol());
+				}
+				else
+					throw new DatabaseSyntaxException(this.toString());
+			case WORD_RULE:
+				if (parts.size() == 1) {
+					if (parts.get(0) instanceof RuleInstance)
+					{
+						RuleInstance ri=(RuleInstance) parts.get(0);
+						return ri.getEquallable(table, parameters, record);
+					}
+					else
+						throw new DatabaseSyntaxException(this.toString());
+
 				} else if (parts.size() == 3) {
 					return getRuleInstance(1).getEquallable(table, parameters, record);
 				} else
@@ -573,17 +601,8 @@ public class RuleInstance implements QueryPart {
 				}
 				else
 					throw new IllegalAccessError();
-
-			case WORD_RULE:
+			case WORD:
 				if (parts.size() == 1) {
-					if (parts.get(0) instanceof RuleInstance)
-					{
-						RuleInstance ri=(RuleInstance) parts.get(0);
-						if (ri.getRule()==Rule.SIGNED_VALUE)
-							return ri.getStringable(table, parameters, record);
-						else
-							throw new IllegalAccessError();
-					}
 					Symbol s = getSymbol();
 					if (s.getType() == SymbolType.IDENTIFIER) {
 						String fieldName = s.getSymbol();
@@ -624,7 +643,19 @@ public class RuleInstance implements QueryPart {
 						else
 							return s.getContent().toString();
 					} else
-						throw new IllegalAccessError();
+						throw new DatabaseSyntaxException(this.toString());
+				}
+				else
+					throw new DatabaseSyntaxException(this.toString());
+			case WORD_RULE:
+				if (parts.size() == 1) {
+					if (parts.get(0) instanceof RuleInstance)
+					{
+						RuleInstance ri=(RuleInstance) parts.get(0);
+						return ri.getStringable(table, parameters, record);
+					}
+					else
+						throw new DatabaseSyntaxException(this.toString());
 				} else if (parts.size() == 3) {
 					throw new DatabaseSyntaxException("Cannot convert an expression to a string");
 				} else
@@ -902,16 +933,8 @@ public class RuleInstance implements QueryPart {
 					return true;
 			case SIGNED_VALUE:
 				return getRuleInstance(1).isIndependentFromOtherTables(table);
-			case WORD_RULE:
+			case WORD:
 				if (parts.size() == 1) {
-					if (parts.get(0) instanceof RuleInstance)
-					{
-						RuleInstance ri=(RuleInstance) parts.get(0);
-						if (ri.getRule()==Rule.SIGNED_VALUE)
-							return ri.isIndependentFromOtherTables(table);
-						else
-							throw new IllegalAccessError();
-					}
 					Symbol s = getSymbol();
 					if (s.getType() == SymbolType.IDENTIFIER) {
 						String fieldName = s.getSymbol();
@@ -921,6 +944,18 @@ public class RuleInstance implements QueryPart {
 						return fa.getTableClass() == table.getClass();
 					} else
 						return true;
+				}
+				else
+					throw new DatabaseSyntaxException(this.toString());
+			case WORD_RULE:
+				if (parts.size() == 1) {
+					if (parts.get(0) instanceof RuleInstance)
+					{
+						RuleInstance ri=(RuleInstance) parts.get(0);
+						return ri.isIndependentFromOtherTables(table);
+					}
+					else
+						throw new DatabaseSyntaxException(this.toString());
 				} else if (parts.size() == 3) {
 					return getRuleInstance(1).isIndependentFromOtherTables(table);
 				} else
@@ -1051,6 +1086,7 @@ public class RuleInstance implements QueryPart {
 						throw new IllegalAccessError();
 				} else
 					throw new IllegalAccessError();
+			case WORD:
 			case WORD_RULE:
 			case SIGNED_VALUE:
 			case NULL_WORD:
@@ -1075,7 +1111,7 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> StringBuilder translateToSqlQuery(Table<T> table, Map<String, Object> parameters,
 			Map<Integer, Object> outputParameters, int firstParameterIndex, Set<TableJunction> tablesJunction)
 			throws DatabaseSyntaxException {
-		return translateToSqlQuery(table, parameters, outputParameters, new AtomicInteger(firstParameterIndex),
+		return translateToSqlQuery(table, parameters, outputParameters, new Reference<>(firstParameterIndex),
 				tablesJunction);
 	}
 
@@ -1141,8 +1177,15 @@ public class RuleInstance implements QueryPart {
 			throw new IllegalAccessError();
 	}
 
+	private int getAndIncrementInteger(Reference<Integer> v)
+	{
+		int r=v.get();
+		v.set(r+1);
+		return r;
+	}
+
 	<T extends DatabaseRecord> StringBuilder translateToSqlQuery(Table<T> table, Map<String, Object> parameters,
-			Map<Integer, Object> outputParameters, AtomicInteger currentParameterID, Set<TableJunction> tablesJunction)
+			Map<Integer, Object> outputParameters, Reference<Integer> currentParameterID, Set<TableJunction> tablesJunction)
 			throws DatabaseSyntaxException {
 		switch (rule) {
 			case COMPARE:
@@ -1162,7 +1205,8 @@ public class RuleInstance implements QueryPart {
 						Symbol comp = ri2.getSymbol();
 						if (((comp.getType() == SymbolType.EQUAL_COMPARATOR || comp.getType() == SymbolType.NOT_EQUAL_COMPARATOR)
 								&& (!ri1.isAlgebraic(table, parameters) || !ri3.isAlgebraic(table, parameters)) )
-								|| comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOT_LIKE) {
+								|| comp.getType() == SymbolType.LIKE || comp.getType() == SymbolType.NOT_LIKE)
+						{
 							if (!ri1.isEqualable(table, parameters, ri3)) {
 								throw new DatabaseSyntaxException(
 										"Cannot compare " + ri1.getContent() + " and " + ri3.getContent());
@@ -1234,12 +1278,12 @@ public class RuleInstance implements QueryPart {
 										.append(comp.getType().getContent());
 								assert parameter2 != null;
 								if (parameter2 instanceof BigDecimal) {
-									int id = currentParameterID.getAndIncrement();
+									int id = getAndIncrementInteger(currentParameterID);
 									res.append("?");
 									String t = DatabaseWrapperAccessor.getBigDecimalType(table.getDatabaseWrapper(), 64);
 									outputParameters.put(id, t.contains("CHAR") ? parameter2.toString() : t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper())) ? BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal) parameter2) : parameter2);
 								} else if (parameter2 instanceof BigInteger) {
-									int id = currentParameterID.getAndIncrement();
+									int id = getAndIncrementInteger(currentParameterID);
 									res.append("?");
 									String t = DatabaseWrapperAccessor.getBigIntegerType(table.getDatabaseWrapper(), 64);
 									outputParameters.put(id, t.contains("CHAR") ? parameter2.toString() : t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper())) ? ((BigInteger) parameter2).toByteArray() : new BigDecimal(((BigInteger) parameter2)));
@@ -1292,7 +1336,7 @@ public class RuleInstance implements QueryPart {
 												if (parameter2 == null) {
 													res.append("NULL");
 												} else {
-													int id = currentParameterID.getAndIncrement();
+													int id = getAndIncrementInteger(currentParameterID);
 													res.append("?");
 													outputParameters.put(id, sfi.instance);
 												}
@@ -1337,13 +1381,19 @@ public class RuleInstance implements QueryPart {
 
 							}
 
-							return new StringBuilder(ri1.needParenthesis()?"(":"")
-									.append(ri1.translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction))
-									.append(ri1.needParenthesis()?")":"")
-									.append(comp.getType().getContent())
-									.append(ri3.needParenthesis()?"(":"")
-									.append(ri3.translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction))
-									.append(ri3.needParenthesis()?")":"");
+							StringBuilder res=new StringBuilder();
+							if (ri1.needParenthesis())
+								res.append("(");
+							res.append(ri1.translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction));
+							if (ri1.needParenthesis())
+								res.append(")");
+							res.append(comp.getType().getContent());
+							if (ri3.needParenthesis())
+								res.append("(");
+							res.append(ri3.translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction));
+							if (ri3.needParenthesis())
+								res.append(")");
+							return res;
 						}
 					}
 				} else
@@ -1448,7 +1498,7 @@ public class RuleInstance implements QueryPart {
 									} catch (Exception e) {
 										throw new DatabaseSyntaxException("Database exception with " + fa1.getField().getDeclaringClass(), e);
 									}
-									int id = currentParameterID.getAndIncrement();
+									int id = getAndIncrementInteger(currentParameterID);
 									res.append("?");
 									outputParameters.put(id, sfis[0].instance);
 								}
@@ -1508,7 +1558,7 @@ public class RuleInstance implements QueryPart {
 											if (p == null) {
 												res.append("NULL");
 											} else {
-												int id = currentParameterID.getAndIncrement();
+												int id = getAndIncrementInteger(currentParameterID);
 												res.append("?");
 												outputParameters.put(id, sfi.instance);
 											}
@@ -1603,18 +1653,11 @@ public class RuleInstance implements QueryPart {
 					throw new IllegalAccessError();
 			}
 			case SIGNED_VALUE:
-				return getRuleInstance(1).translateToSqlQuery(table, parameters, outputParameters, tablesJunction)
+				return getRuleInstance(1).translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction)
 						.insert(0, getRuleInstance(0).getSymbol().getType().getContent());
-			case WORD_RULE:
-				if (parts.size() == 1) {
-					if (parts.get(0) instanceof RuleInstance)
-					{
-						RuleInstance ri=(RuleInstance) parts.get(0);
-						if (ri.getRule()==Rule.SIGNED_VALUE)
-							return ri.translateToSqlQuery(table, parameters, outputParameters, tablesJunction);
-						else
-							throw new IllegalAccessError();
-					}
+			case WORD:
+				if (parts.size()==1)
+				{
 					Symbol s = getSymbol();
 					if (s.getType() == SymbolType.IDENTIFIER) {
 						String fieldName = s.getSymbol();
@@ -1652,7 +1695,7 @@ public class RuleInstance implements QueryPart {
 						} catch (Exception e) {
 							throw new DatabaseSyntaxException("Database exception", e);
 						}
-						int id = currentParameterID.getAndIncrement();
+						int id = getAndIncrementInteger(currentParameterID);
 						if (sfis == null)
 							throw new DatabaseSyntaxException("Database exception");
 						outputParameters.put(id, sfis[0].instance);
@@ -1665,7 +1708,7 @@ public class RuleInstance implements QueryPart {
 						if (n instanceof BigDecimal)
 						{
 							StringBuilder sb=new StringBuilder("?");
-							int id = currentParameterID.getAndIncrement();
+							int id = getAndIncrementInteger(currentParameterID);
 							String t=DatabaseWrapperAccessor.getBigDecimalType(table.getDatabaseWrapper(), 64);
 							outputParameters.put(id, t.contains("CHAR")?n.toString():t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper()))? BigDecimalFieldAccessor.bigDecimalToBytes((BigDecimal) n):n);
 							return sb;
@@ -1673,7 +1716,7 @@ public class RuleInstance implements QueryPart {
 						else if (n instanceof BigInteger)
 						{
 							StringBuilder sb=new StringBuilder("?");
-							int id = currentParameterID.getAndIncrement();
+							int id = getAndIncrementInteger(currentParameterID);
 							String t=DatabaseWrapperAccessor.getBigIntegerType(table.getDatabaseWrapper(), 64);
 							outputParameters.put(id, t.contains("CHAR")?n.toString():t.contains(DatabaseWrapperAccessor.getBinaryBaseWord(table.getDatabaseWrapper()))? ((BigInteger)n).toByteArray():new BigDecimal(((BigInteger)n)));
 							return sb;
@@ -1681,7 +1724,19 @@ public class RuleInstance implements QueryPart {
 						else
 							return new StringBuilder(n.toString());
 					} else
-						return new StringBuilder(s.getSymbol());
+						throw new IllegalAccessError();
+				}
+				else
+					throw new DatabaseSyntaxException(this.toString());
+			case WORD_RULE:
+				if (parts.size() == 1) {
+					if (parts.get(0) instanceof RuleInstance)
+					{
+						RuleInstance ri=(RuleInstance) parts.get(0);
+						return ri.translateToSqlQuery(table, parameters, outputParameters, currentParameterID, tablesJunction);
+					}
+					else
+						throw new DatabaseSyntaxException(this.toString());
 
 				} else if (parts.size() == 3) {
 					StringBuilder sb = new StringBuilder();
@@ -1699,18 +1754,14 @@ public class RuleInstance implements QueryPart {
 
 	private final Map<Class<?>, Constructor<?>> cachedConstructors=new HashMap<>();
 
-	private Constructor<?> getConstructor(final Class<?> declaringClass) throws PrivilegedActionException {
+	private Constructor<?> getConstructor(final Class<?> declaringClass) throws NoSuchMethodException {
 		synchronized (cachedConstructors)
 		{
 			Constructor<?> c=cachedConstructors.get(declaringClass);
 			if (c==null)
 			{
-				c=AccessController.doPrivileged((PrivilegedExceptionAction<Constructor<?>>) () -> {
-					Constructor<?> c1 =declaringClass.getDeclaredConstructor();
-					c1.setAccessible(true);
-					return c1;
-
-				});
+				c=declaringClass.getDeclaredConstructor();
+				c.setAccessible(true);
 				cachedConstructors.put(declaringClass, c);
 			}
 			return c;
@@ -1718,7 +1769,7 @@ public class RuleInstance implements QueryPart {
 
 	}
 
-	ArrayList<QueryPart> getParts() {
+	List<QueryPart> getParts() {
 		return parts;
 	}
 

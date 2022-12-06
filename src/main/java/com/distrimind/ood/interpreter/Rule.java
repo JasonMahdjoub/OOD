@@ -35,6 +35,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.interpreter;
 
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 /**
@@ -47,7 +48,7 @@ public enum Rule {
     OPEN_PARENTHESIS(true, "^(<" + SymbolType.OPEN_PARENTHESIS.name()+">)$"),
     CLOSE_PARENTHESIS(true, "^(<" + SymbolType.CLOSE_PARENTHESIS.name()+">)$"),
     NULL_WORD(true, "^(<" + SymbolType.NULL.name()+">)$"),
-    WORD(true, "^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.PARAMETER.name() + ">"),
+    WORD(true, "^(<" + SymbolType.IDENTIFIER.name() + ">|<" + SymbolType.NUMBER.name() + ">|<" + SymbolType.STRING.name() + ">|<" + SymbolType.PARAMETER.name() + ">)$"),
     MULTIPLY_OPERATOR(true, "^(<"+SymbolType.MULTIPLY.name()+"<|>"+SymbolType.DIVIDE.name()+"<|>"+SymbolType.MODULO+">)$"),
     ADD_OPERATOR(true, "^(<"+SymbolType.PLUS.name()+"<|>"+SymbolType.MINUS.name()+">)$"),
     OP_COMP(true, "^(<" + SymbolType.EQUAL_COMPARATOR.name() + ">|<"
@@ -75,9 +76,12 @@ public enum Rule {
     private final Pattern pattern;
 
     private Rule[][] rulesComposition=null;
+    private static final Rule[] nonSymbolRules;
 
     static
     {
+        nonSymbolRules= Arrays.copyOfRange(Rule.values(), Rule.WORD_RULE.ordinal(), Rule.values().length);
+
         Rule.WORD_RULE.rulesComposition=new Rule[][]{
                 {WORD},
                 {SIGNED_VALUE},
@@ -85,14 +89,14 @@ public enum Rule {
         };
         Rule.NULL_TEST.rulesComposition=new Rule[][]{{WORD_RULE, IS_OP, NULL_WORD}};
         Rule.FACTOR.rulesComposition=new Rule[][]{
-                {FACTOR},
+                {WORD_RULE},
                 {EXPRESSION, MULTIPLY_OPERATOR, EXPRESSION},
                 {FACTOR, MULTIPLY_OPERATOR, FACTOR},
                 {EXPRESSION, MULTIPLY_OPERATOR, FACTOR},
                 {FACTOR, MULTIPLY_OPERATOR, EXPRESSION},
         };
         Rule.EXPRESSION.rulesComposition=new Rule[][]{
-                {WORD_RULE},
+                {FACTOR},
                 {EXPRESSION, ADD_OPERATOR, EXPRESSION},
                 {FACTOR, ADD_OPERATOR, FACTOR},
                 {EXPRESSION, ADD_OPERATOR, FACTOR},
@@ -121,6 +125,11 @@ public enum Rule {
 
     }
 
+    static Rule[] getNonSymbolRules()
+    {
+        return nonSymbolRules;
+    }
+
     public Rule[][] getRulesComposition() {
         return rulesComposition;
     }
@@ -145,6 +154,6 @@ public enum Rule {
     }
     static int getHigherPriorLevel()
     {
-        return EXPRESSION.ordinal();
+        return SIGNED_VALUE.ordinal();
     }
 }

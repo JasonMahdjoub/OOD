@@ -120,7 +120,7 @@ public class Symbol implements QueryPart {
 			case NUMBER:
 			case PARAMETER:
 			case STRING:
-				return new RuleInstance(Rule.WORD_RULE, this);
+				return new RuleInstance(Rule.WORD, this);
 			case NULL:
 				return new RuleInstance(Rule.NULL_WORD, this);
 			case IS:
@@ -137,8 +137,9 @@ public class Symbol implements QueryPart {
 			case MINUS:
 				return new RuleInstance(Rule.ADD_OPERATOR, this);
 			case OPEN_PARENTHESIS:
+				return new RuleInstance(Rule.OPEN_PARENTHESIS, this);
 			case CLOSE_PARENTHESIS:
-				return null;
+				return new RuleInstance(Rule.CLOSE_PARENTHESIS, this);
 			default:
 				throw new IllegalAccessError();
 		}
