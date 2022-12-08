@@ -53,6 +53,11 @@ public class RepetitiveTableTaskStrategyOnTable1 implements ITableTaskStrategy<T
 	public static final long periodInMs=850;
 	private final long startUTC=System.currentTimeMillis();
 
+	public static void reset()
+	{
+		oneInstance=false;
+	}
+
 	public RepetitiveTableTaskStrategyOnTable1() {
 		assert !oneInstance;
 		RepetitiveTableTaskStrategyOnTable1.oneInstance = true;

@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since OOD 3.2.0
  */
 public class NonAnnotationPeriodicDatabaseTaskStrategyWithEndTimeLimit implements IDatabaseTaskStrategy {
+
 	public final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
 	public static final long periodInMs=500;
 	private final long startUTC=System.currentTimeMillis();

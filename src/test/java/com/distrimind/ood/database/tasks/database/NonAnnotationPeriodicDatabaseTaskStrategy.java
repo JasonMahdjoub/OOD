@@ -49,6 +49,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since OOD 3.2.0
  */
 public class NonAnnotationPeriodicDatabaseTaskStrategy implements IDatabaseTaskStrategy {
+	public static void reset()
+	{
+		oneInstance=false;
+	}
 	private static boolean oneInstance=false;
 	public final AtomicInteger numberOfTaskCall=new AtomicInteger(0);
 	public static final long periodInMs=750;

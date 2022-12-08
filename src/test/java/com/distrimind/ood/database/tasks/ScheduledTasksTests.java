@@ -214,6 +214,14 @@ public abstract class ScheduledTasksTests {
 			System.out.println(r);
 		Assert.assertEquals(table1.getRecordsNumber(), 0);
 		Assert.assertEquals(table2.getRecordsNumber(), 0);
+		reset();
+	}
+
+
+	void reset()
+	{
+		NonAnnotationPeriodicDatabaseTaskStrategy.reset();
+		RepetitiveTableTaskStrategyOnTable1.reset();
 	}
 
 
