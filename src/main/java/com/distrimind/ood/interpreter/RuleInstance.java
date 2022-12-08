@@ -57,7 +57,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 /**
- * 
+ * Syntax rule
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0
@@ -668,15 +668,6 @@ public class RuleInstance implements QueryPart {
 	public <T extends DatabaseRecord> int compareTo(Table<T> table, T record, Object o1, Object o2)
 			throws DatabaseSyntaxException {
 		try {
-			/*if (((o1==null || !Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()))
-					&& (o2!=null && Table.FieldAccessorValue.class.isAssignableFrom(o2.getClass())))
-					|| ((o1==null || !BigDecimal.class.isAssignableFrom(o1.getClass()))
-							&& (o2!=null && BigDecimal.class.isAssignableFrom(o2.getClass()))
-							&& (o1==null || !Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass())))) {
-				Object o = o1;
-				o1 = o2;
-				o2 = o;
-			}*/
 			if (o1!=null && Table.FieldAccessorValue.class.isAssignableFrom(o1.getClass()))
 				o1 = ((Table.FieldAccessorValue) o1).getFieldAccessor().getValue(getRecordInstance(table, record, ((Table.FieldAccessorValue) o1).getFieldAccessor()));
 			if (o2!=null && Table.FieldAccessorValue.class.isAssignableFrom(o2.getClass()))
@@ -1320,7 +1311,7 @@ public class RuleInstance implements QueryPart {
 									sfs2 = fa2.getDeclaredSqlFields();
 
 								for (SqlField sf : sfs) {
-
+									String sql_field_name=sqlTableName1.get()+"."+sf.shortFieldWithoutQuote;
 									++fieldsNumber;
 									if (fieldsNumber > 1)
 										res.append(" AND ");
@@ -1331,7 +1322,7 @@ public class RuleInstance implements QueryPart {
 									if (fa2 == null) {
 										boolean found = false;
 										for (SqlFieldInstance sfi : sfis) {
-											if (sfi.field.equals(sf.field)) {
+											if (sfi.fieldWithoutQuote.equals(sql_field_name)) {
 
 												if (parameter2 == null) {
 													res.append("NULL");
