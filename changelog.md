@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.2.0 STABLE (Build: 5995) (from 01/04/2013 to 06/12/2022)
+3.2.0 STABLE (Build: 5999) (from 01/04/2013 to 08/12/2022)
 
 # Creator(s):
 * Jason MAHDJOUB
@@ -11,7 +11,7 @@ Object Oriented Database
 # Changes:
 
 
-### 3.2.0 STABLE (06/12/2022)
+### 3.2.0 STABLE (08/12/2022)
 #### New feature(s)
 * Add database tasks manager, that permit to schedule periodic tasks executed into the database. See package com.distrimind.ood.database.tasks
 * Add possibility to specify a context with DatabaseWrapper. See DatabaseFactory.setContext(Object)
