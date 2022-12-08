@@ -41,7 +41,7 @@ import com.distrimind.util.io.RandomInputStream;
 import java.io.IOException;
 
 /**
- * 
+ * Input stream getter
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0.0

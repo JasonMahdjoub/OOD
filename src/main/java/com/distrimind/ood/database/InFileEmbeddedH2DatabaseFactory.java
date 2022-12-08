@@ -81,7 +81,6 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	/**
 	 * Constructor
 	 *
-	 *
 	 * @param _directory_name
 	 *            The directory which contains the database. If this directory does not
 	 *            exists, it will be automatically created with the correspondent
@@ -179,12 +178,12 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	}
 
 	@Override
-	protected EmbeddedH2DatabaseWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
-		return new EmbeddedH2DatabaseWrapper(directory, databaseConfigurations, databaseLifeCycles,
+	protected EmbeddedH2DatabaseWrapper newWrapperInstanceImpl() throws DatabaseException {
+		return new EmbeddedH2DatabaseWrapper(getDefaultPoolExecutor(), getContext(), directory, databaseConfigurations, getDatabaseLifeCycles(),
 				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
-				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, alwaysDisconnectAfterOneTransaction, fileLock, pageSizeBytes, cacheSizeBytes);
+				getSecureRandom(), isCreateDatabasesIfNecessaryAndCheckIt(), alwaysDisconnectAfterOneTransaction, fileLock, pageSizeBytes, cacheSizeBytes);
 	}
 
 	public boolean isAlwaysDisconnectAfterOneTransaction() {

@@ -42,6 +42,7 @@ import com.distrimind.util.io.*;
 import java.io.IOException;
 
 /**
+ * Encrypted backup part coming from central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

@@ -52,6 +52,7 @@ import java.sql.SQLException;
 import java.util.*;
 
 /**
+ * Calendar field accessor
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0
@@ -173,6 +174,11 @@ public class CalendarFieldAccessor extends FieldAccessor{
 	@Override
 	public boolean isComparable() {
 		return true;
+	}
+
+	@Override
+	public boolean isAlgebraic() {
+		return false;
 	}
 
 	@Override

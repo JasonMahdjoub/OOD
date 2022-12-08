@@ -32,6 +32,12 @@
         </classes>
     </test>
 
+	<test name="testScheduledTasks">
+		<classes>
+			<class name="com.distrimind.ood.database.tests.H2ScheduledTasksTests" />
+			<class name="com.distrimind.ood.database.tests.HSQLDBScheduledTasksTests" />
+		</classes>
+	</test>
 
 
 </suite>

@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Initial connection message with distant backup center
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

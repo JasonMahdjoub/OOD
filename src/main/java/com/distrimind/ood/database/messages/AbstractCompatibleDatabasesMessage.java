@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * Message that contains compatible databases between two peers
  * @author Jason Mahdjoub
  * @version 1.0
  * @since Utils 3.0.0

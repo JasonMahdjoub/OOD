@@ -44,6 +44,7 @@ import com.distrimind.util.io.*;
 import java.io.IOException;
 
 /**
+ * Confirmation from central database backup of transfer of encrypted backup part
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

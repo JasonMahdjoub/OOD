@@ -55,7 +55,7 @@ import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
 /**
- * 
+ * Boolean number field accessor
  * @author Jason Mahdjoub
  * @version 1.2
  * @since OOD 1.0
@@ -140,7 +140,10 @@ public class BooleanNumberFieldAccessor extends FieldAccessor {
 	public boolean isComparable() {
 		return false;
 	}
-
+	@Override
+	public boolean isAlgebraic() {
+		return false;
+	}
 	@Override
 	public int compare(Object _r1, Object _r2) throws DatabaseException {
 		throw new DatabaseException("Unexpected exception");

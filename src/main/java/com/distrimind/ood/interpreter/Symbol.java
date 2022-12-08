@@ -49,7 +49,7 @@ import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
 
 /**
- * 
+ * Symbol instance
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0
@@ -91,40 +91,58 @@ public class Symbol implements QueryPart {
 	}
 
 	@Override
+	public String toString() {
+		return "Symbol{" +
+				"type=" + type +
+				'}';
+	}
+
+	@Override
 	public Object getContent() {
 		return getSymbol();
 	}
 
 	public RuleInstance getRule() {
 		switch (type) {
-		case ANDCONDITION:
-		case ORCONDITION:
-			return new RuleInstance(Rule.OPCONDITION, this);
-		case EQUALOPERATOR:
-		case NOTEQUALOPERATOR:
-		case GREATEROPERATOR:
-		case GREATEROREQUALOPERATOR:
-		case LOWEROPERATOR:
-		case LOWEROREQUALOPERATOR:
-		case LIKE:
-		case NOTLIKE:
-			return new RuleInstance(Rule.OPCOMP, this);
-		case IDENTIFIER:
-		case NUMBER:
-		case PARAMETER:
-		case STRING:
-			return new RuleInstance(Rule.TERME, this);
-		case NULL:
-			return new RuleInstance(Rule.NULL, this);
-		case IS:
-		case ISNOT:
-			return new RuleInstance(Rule.ISOP, this);
-		case OPEN_PARENTHESIS:
-		case CLOSE_PARENTHESIS:
-			return null;
-
+			case AND_CONDITION:
+			case OR_CONDITION:
+				return new RuleInstance(Rule.OP_CONDITION, this);
+			case EQUAL_COMPARATOR:
+			case NOT_EQUAL_COMPARATOR:
+			case GREATER_COMPARATOR:
+			case GREATER_OR_EQUAL_COMPARATOR:
+			case LOWER_COMPARATOR:
+			case LOWER_OR_EQUAL_COMPARATOR:
+			case LIKE:
+			case NOT_LIKE:
+				return new RuleInstance(Rule.OP_COMP, this);
+			case IDENTIFIER:
+			case NUMBER:
+			case PARAMETER:
+			case STRING:
+				return new RuleInstance(Rule.WORD, this);
+			case NULL:
+				return new RuleInstance(Rule.NULL_WORD, this);
+			case IS:
+			case IS_NOT:
+				return new RuleInstance(Rule.IS_OP, this);
+			case IN:
+			case NOT_IN:
+				return new RuleInstance(Rule.IN_OP, this);
+			case MULTIPLY:
+			case DIVIDE:
+			case MODULO:
+				return new RuleInstance(Rule.MULTIPLY_OPERATOR, this);
+			case PLUS:
+			case MINUS:
+				return new RuleInstance(Rule.ADD_OPERATOR, this);
+			case OPEN_PARENTHESIS:
+				return new RuleInstance(Rule.OPEN_PARENTHESIS, this);
+			case CLOSE_PARENTHESIS:
+				return new RuleInstance(Rule.CLOSE_PARENTHESIS, this);
+			default:
+				throw new IllegalAccessError();
 		}
-		return null;
 	}
 
 	@Override
@@ -213,6 +231,35 @@ public class Symbol implements QueryPart {
 		else 
 			return getType().name();
 
+	}
+	@Override
+	public <T extends DatabaseRecord> boolean isAlgebraic(Table<T> table, Map<String, Object> parameters)
+			throws DatabaseSyntaxException
+	{
+		if (getType() == SymbolType.IDENTIFIER) {
+			FieldAccessor fa = table.getFieldAccessor(getSymbol());
+			if (fa == null)
+				throw new DatabaseSyntaxException(
+						"Cannot find field " + getSymbol() + " into table " + table.getClass().getSimpleName());
+			if (fa.getDeclaredSqlFields().length!=1)
+				return false;
+			return fa.isAlgebraic();
+		} else if (getType() == SymbolType.PARAMETER) {
+			Object p = parameters.get(getSymbol());
+			if (p == null)
+			{
+				return true;
+			}
+			FieldAccessor fa = getFieldAccessor(table, p);
+
+			if (fa == null)
+				throw new DatabaseSyntaxException("No field accessor corresponds to parameter " + getSymbol()
+						+ " and type " + p.getClass().getName() + " with table " + table.getClass().getName());
+			if (fa.getDeclaredSqlFields().length!=1)
+				return false;
+			return fa.isAlgebraic();
+		} else
+			return getType() == SymbolType.NUMBER;
 	}
 	public static <T extends DatabaseRecord> FieldAccessor getFieldAccessor(Table<T> table, Object o) {
 		return getFieldAccessor(table, o, new HashSet<>());

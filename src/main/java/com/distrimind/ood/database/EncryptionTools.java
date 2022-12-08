@@ -42,6 +42,7 @@ import com.distrimind.util.io.*;
 import java.io.IOException;
 
 /**
+ * Encryption tools
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

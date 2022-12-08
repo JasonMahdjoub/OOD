@@ -42,9 +42,11 @@ import com.distrimind.util.DecentralizedValue;
 import java.util.Set;
 
 /**
+ * Database event notifier
  * @author Jason Mahdjoub
  * @version 1.0
  * @since MaDKitLanEdition 2.0.0
+ * @see com.distrimind.ood.database.DatabaseWrapper.DatabaseSynchronizer#setNotifier(DatabaseNotifier)
  */
 public interface DatabaseNotifier {
     void newDatabaseEventDetected(DatabaseWrapper wrapper) throws DatabaseException;

@@ -58,6 +58,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * Decentralized value field accessor
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0.0
@@ -236,6 +237,11 @@ public class DecentralizedValueFieldAccessor extends FieldAccessor {
 
 	@Override
 	public boolean isComparable() {
+		return false;
+	}
+
+	@Override
+	public boolean isAlgebraic() {
 		return false;
 	}
 

@@ -56,7 +56,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 
+ * Foreign key field accessor
  * @author Jason Mahdjoub
  * @version 1.3
  * @since OOD 1.0
@@ -262,6 +262,10 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 
 	@Override
 	public boolean isComparable() {
+		return false;
+	}
+	@Override
+	public boolean isAlgebraic() {
 		return false;
 	}
 

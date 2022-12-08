@@ -47,6 +47,7 @@ import com.distrimind.util.io.SerializationTools;
 import java.io.IOException;
 
 /**
+ * Correction from central database backup of last transaction identifier
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

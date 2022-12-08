@@ -37,7 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.exceptions;
 
 /**
- * 
+ * Unrecognized symbol exception
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0

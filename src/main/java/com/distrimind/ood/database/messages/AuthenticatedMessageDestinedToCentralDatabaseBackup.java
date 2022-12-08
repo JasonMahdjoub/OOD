@@ -48,6 +48,7 @@ import com.distrimind.util.io.SerializationTools;
 import java.io.IOException;
 
 /**
+ * Authenticated message destined to central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0
@@ -114,7 +115,7 @@ public abstract class AuthenticatedMessageDestinedToCentralDatabaseBackup extend
 	@Override
 	public int getInternalSerializedSizeWithoutSignatures() {
 		int res= SerializationTools.getInternalSize(hostSource, 0)+2+SerializationTools.getInternalSize(certificate);
-		res+=SerializationTools.getInternalSize(asymmetricSignature, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+		res+=SerializationTools.getInternalSize(asymmetricSignature, ASymmetricAuthenticatedSignatureType.MAX_SIZE_IN_BYTES_OF_ASYMMETRIC_SIGNATURE);
 		return res;
 	}
 

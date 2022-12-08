@@ -41,6 +41,7 @@ import com.distrimind.util.progress_monitors.ProgressMonitorParameters;
 import com.distrimind.util.properties.MultiFormatProperties;
 
 /**
+ * Database backup configuration
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0.0

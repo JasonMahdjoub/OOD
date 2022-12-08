@@ -59,7 +59,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 /**
- * 
+ * Byte tab field accessor
  * @author Jason Mahdjoub
  * @version 1.2
  * @since OOD 1.0
@@ -263,6 +263,10 @@ public class ByteTabFieldAccessor extends FieldAccessor {
 
 	@Override
 	public boolean isComparable() {
+		return false;
+	}
+	@Override
+	public boolean isAlgebraic() {
 		return false;
 	}
 

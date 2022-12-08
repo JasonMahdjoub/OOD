@@ -1,4 +1,4 @@
-
+package com.distrimind.ood.database.tasks;
 /*
 Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
 
@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java language
+and the java language 
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -34,12 +34,15 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
-package com.distrimind.ood.database.exceptions;
 
-public class QueryInterpretationImpossible extends DatabaseSyntaxException {
+import com.distrimind.ood.database.DatabaseWrapper;
+import com.distrimind.ood.database.exceptions.DatabaseException;
 
-	public QueryInterpretationImpossible(String query) {
-		super("The next query cannot be interpreted with several rules : " + query);
-	}
-
+/**
+ * @author Jason Mahdjoub
+ * @version 1.0
+ * @since OOD 3.2.0
+ */
+public interface IDatabaseTaskStrategy extends ITaskStrategy {
+	void launchTask(DatabaseWrapper wrapper) throws DatabaseException;
 }

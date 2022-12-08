@@ -57,7 +57,7 @@ import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
 /**
- * 
+ * Date field accessor
  * @author Jason Mahdjoub
  * @version 1.2
  * @since OOD 1.0
@@ -186,7 +186,10 @@ public class DateFieldAccessor extends FieldAccessor {
 	public boolean isComparable() {
 		return true;
 	}
-
+	@Override
+	public boolean isAlgebraic() {
+		return true;
+	}
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {
 		return false;

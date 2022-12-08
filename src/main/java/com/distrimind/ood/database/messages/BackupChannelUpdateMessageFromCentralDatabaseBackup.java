@@ -46,6 +46,7 @@ import com.distrimind.util.io.*;
 import java.io.IOException;
 
 /**
+ * Backup channel update message from central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

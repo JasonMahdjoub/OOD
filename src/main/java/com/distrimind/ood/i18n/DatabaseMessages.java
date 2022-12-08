@@ -39,6 +39,7 @@ import java.io.File;
 import java.util.ResourceBundle;
 
 /**
+ * Database message type
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0.0

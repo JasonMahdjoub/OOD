@@ -50,6 +50,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * Database schema
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

@@ -45,6 +45,7 @@ import java.io.IOException;
 
 
 /**
+ * Encrypted backup part
  * @author Jason Mahdjoub
  * @version 1.0
  * @since Utils 3.0.0

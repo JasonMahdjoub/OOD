@@ -51,7 +51,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 /**
- * 
+ * char field accessor
  * @author Jason Mahdjoub
  * @version 1.2
  * @since OOD 1.0
@@ -133,6 +133,10 @@ public class charFieldAccessor extends FieldAccessor {
 	@Override
 	public boolean isComparable() {
 		return true;
+	}
+	@Override
+	public boolean isAlgebraic() {
+		return false;
 	}
 
 	@Override

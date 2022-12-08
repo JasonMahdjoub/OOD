@@ -50,7 +50,11 @@ import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.ood.database.filemanager.FileReferenceManager;
 import com.distrimind.ood.database.messages.*;
+import com.distrimind.ood.database.tasks.AbstractScheduledTask;
+import com.distrimind.ood.database.tasks.DatabaseTasksManager;
+import com.distrimind.ood.database.tasks.ScheduledTask;
 import com.distrimind.util.*;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.ASymmetricPublicKey;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
@@ -64,6 +68,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
@@ -106,7 +111,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 			LastValidatedDistantIDPerClientTable.class,
 			RevokedCertificateTable.class));
 
-	static final Set<Package> reservedDatabases=new HashSet<>(Arrays.asList(DatabaseWrapper.class.getPackage(), CentralDatabaseBackupReceiverPerPeer.class.getPackage(), FileReferenceManager.class.getPackage()));
+	static final Set<Package> reservedDatabases=new HashSet<>(Arrays.asList(DatabaseWrapper.class.getPackage(), CentralDatabaseBackupReceiverPerPeer.class.getPackage(), FileReferenceManager.class.getPackage(), ScheduledTask.class.getPackage()));
 
 	public static String toString(DecentralizedValue dv)
 	{
@@ -123,6 +128,13 @@ public abstract class DatabaseWrapper implements Cleanable {
 	private static final String TEMPORARY_BACKUPS_COMING_FROM_INTERNAL_BACKUP_DIRECTORY_NAME="temporary_backups_coming_from_internal_db_backup";
 
 	private static final String HOST_CHANNEL_ID_FILE_NAME="host_channel_id";
+
+
+
+	public ScheduledPoolExecutor getDefaultPoolExecutor() {
+		return defaultPoolExecutor;
+	}
+
 	protected static abstract class Finalizer extends Cleanable.Cleaner
 	{
 		private final Lock locker;
@@ -352,6 +364,9 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 	private volatile Logger centralDatabaseLogger=null;
 	private volatile FileReferenceManager fileReferenceManager=null;
+	private volatile DatabaseTasksManager databaseTasksManager=null;
+	private final ScheduledPoolExecutor defaultPoolExecutor;
+	private final Object context;
 
 
 	public FileReferenceManager getFileReferenceManager() throws DatabaseException {
@@ -372,6 +387,31 @@ public abstract class DatabaseWrapper implements Cleanable {
 		}
 		return r;
 	}
+	public DatabaseTasksManager getDatabaseTasksManager() throws DatabaseException {
+		DatabaseTasksManager r=databaseTasksManager;
+		if (r==null)
+		{
+			synchronized(this)
+			{
+				r=databaseTasksManager;
+				if (r==null)
+				{
+					loadDatabase(new DatabaseConfiguration(new DatabaseSchema(AbstractScheduledTask.class.getPackage(), AbstractScheduledTask.internalTaskSchedulingClassesList),
+									DatabaseConfiguration.SynchronizationType.NO_SYNCHRONIZATION),
+							null);
+					try {
+						Constructor<DatabaseTasksManager> c=DatabaseTasksManager.class.getDeclaredConstructor(DatabaseWrapper.class);
+						c.setAccessible(true);
+						r=databaseTasksManager=c.newInstance(this);
+					} catch (NoSuchMethodException | InstantiationException | IllegalAccessException |
+							 InvocationTargetException e) {
+						throw new DatabaseException("", e);
+					}
+				}
+			}
+		}
+		return r;
+	}
 	public static int getMaxHostNumbers() {
 		return MAX_HOST_NUMBERS;
 	}
@@ -380,6 +420,12 @@ public abstract class DatabaseWrapper implements Cleanable {
 		if (maxHostNumbers>=0xFFFF)
 			throw new IllegalArgumentException();
 		MAX_HOST_NUMBERS = maxHostNumbers;
+	}
+
+	public <T> T getContext()
+	{
+		//noinspection unchecked
+		return (T)context;
 	}
 
 	public Logger getNetworkLogger() {
@@ -1183,7 +1229,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 		}
 		return null;
 	}
-	protected DatabaseWrapper(Finalizer finalizer, boolean alwaysDisconnectAfterOnTransaction,
+	protected DatabaseWrapper(Finalizer finalizer,
+							  ScheduledPoolExecutor defaultPoolExecutor, Object context, boolean alwaysDisconnectAfterOnTransaction,
 							  DatabaseConfigurations databaseConfigurations,
 							  DatabaseLifeCycles databaseLifeCycles,
 							  EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -1191,6 +1238,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 							  EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 							  AbstractSecureRandom secureRandom,
 							  boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
+		this.defaultPoolExecutor=defaultPoolExecutor;
+		this.context=context;
 		this.finalizer=finalizer;
 		registerCleanerIfNotDone(this.finalizer);
 		if (finalizer.loadToMemory)
@@ -1555,6 +1604,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 		final Set<String> backupDatabasePartsSynchronizingWithCentralDatabaseBackup=new HashSet<>();
 		private boolean sendIndirectTransactions;
 		private DecentralizedValue centralID;
+		private CentralDatabaseBackupReceiver centralDatabaseBackupReceiver;
 		private long minFilePartDurationBeforeBecomingFinalFilePart=Long.MAX_VALUE;
 
 		DatabaseSynchronizer() {
@@ -1565,7 +1615,24 @@ public abstract class DatabaseWrapper implements Cleanable {
 		}
 
 		public void setCentralID(DecentralizedValue centralID) {
+			if (centralID==null)
+				throw new NullPointerException();
+			if (this.centralID!=null)
+				throw new IllegalAccessError();
 			this.centralID = centralID;
+		}
+		@SuppressWarnings("unused")
+		void setCentralDatabaseBackupReceiver(CentralDatabaseBackupReceiver centralDatabaseBackupReceiver) {
+			if (centralDatabaseBackupReceiver==null)
+				throw new NullPointerException();
+			if (this.centralDatabaseBackupReceiver!=null)
+				throw new IllegalAccessError();
+			this.centralDatabaseBackupReceiver = centralDatabaseBackupReceiver;
+		}
+
+		@SuppressWarnings("unused")
+		CentralDatabaseBackupReceiver getCentralDatabaseBackupReceiver() {
+			return centralDatabaseBackupReceiver;
 		}
 
 		public void loadCentralDatabaseClassesIfNecessary() throws DatabaseException {
@@ -4157,6 +4224,13 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 	@Override
 	public final void close() {
+		try {
+			Method mc=DatabaseTasksManager.class.getDeclaredMethod("close");
+			mc.setAccessible(true);
+			mc.invoke(getDatabaseTasksManager());
+		} catch (NoSuchMethodException | DatabaseException | IllegalAccessException | InvocationTargetException e) {
+			e.printStackTrace();
+		}
 		clean();
 	}
 
@@ -6229,6 +6303,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 			throw new DatabaseException("There is already a database associated to the given wrapper ");
 
 		boolean oldDatabaseReplaced=false;
+
+
 		boolean allNotFound=loadDatabaseTables(configuration, databaseVersion);
 		if (allNotFounds.get() && allNotFound)
 			allNotFounds.set(true);
@@ -6314,6 +6390,29 @@ public abstract class DatabaseWrapper implements Cleanable {
 			actualDatabaseLoading.initBackupRestoreManager(this, getDatabaseDirectory(), configuration);
 		if (finalizer.databaseLogger!=null)
 			finalizer.databaseLogger.info("Configuration loaded: "+configuration);
+		if (!DatabaseWrapper.reservedDatabases.contains(configuration.getDatabaseSchema().getPackage())) {
+			try {
+				Method prePackageLoadingMethod = DatabaseTasksManager.class.getDeclaredMethod("prePackageLoading", Package.class);
+				Method endPackageLoadingMethod = DatabaseTasksManager.class.getDeclaredMethod("endPackageLoading");
+				Method loadTableMethod = DatabaseTasksManager.class.getDeclaredMethod("loadTable", Table.class);
+				prePackageLoadingMethod.setAccessible(true);
+				endPackageLoadingMethod.setAccessible(true);
+				loadTableMethod.setAccessible(true);
+				prePackageLoadingMethod.invoke(getDatabaseTasksManager(), configuration.getDatabaseSchema().getPackage());
+				for (Table<?> t : actualDatabaseLoading.tables_per_versions.get(databaseVersion).tables_instances.values()) {
+					loadTableMethod.invoke(getDatabaseTasksManager(), t);
+				}
+				endPackageLoadingMethod.invoke(getDatabaseTasksManager());
+			} catch (NoSuchMethodException | IllegalAccessException e) {
+				throw new RuntimeException(e);
+			} catch (InvocationTargetException e) {
+				if (e.getCause() instanceof Exception)
+					throw DatabaseException.getDatabaseException((Exception) e.getCause());
+				else
+					throw new RuntimeException(e);
+			}
+		}
+
 		return oldDatabaseReplaced;
 
 	}
@@ -6776,11 +6875,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 	/**
 	 * Returns the OOD (and non native) backup manager.
-	 *
 	 * Backups into this manager are done in real time.
-	 *
 	 * Backups and restores into this backup manager can be done manually.
-	 *
 	 * Enables to make incremental database backups, and database restore.
 	 * @param _package the concerned database
 	 * @return the backup manager or null if no backup manager was configured.
@@ -6797,11 +6893,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 	/**
 	 * Returns the OOD (and non native) backup manager.
-	 *
 	 * Backups into this manager are done in real time.
-	 *
 	 * Backups and restores into this backup manager can be done manually.
-	 *
 	 * Enables to make incremental database backups, and database restore.
 	 * @param _package the concerned database
 	 * @return the backup manager or null if no backup manager was configured.
@@ -6819,11 +6912,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 	/**
 	 * Returns the OOD (and non native) backup manager.
-	 *
 	 * Backups into this manager are NOT done in real time.
-	 *
 	 * Backups and restores into this backup manager can be done manually.
-	 *
 	 * Enables to make incremental database backups, and database restore.
 	 * @param backupDirectory the backup directory
 	 * @param _package the concerned database

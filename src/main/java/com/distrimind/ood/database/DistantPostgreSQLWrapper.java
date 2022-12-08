@@ -40,6 +40,7 @@ import com.distrimind.ood.database.exceptions.DatabaseLoadingException;
 import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.WrappedPassword;
@@ -50,6 +51,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 /**
+ * PostgreSQL driver
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0
@@ -75,7 +77,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 		}
 	}
 
-	protected DistantPostgreSQLWrapper(String databaseName,String urlLocation,
+	protected DistantPostgreSQLWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, String databaseName, String urlLocation,
 									   DatabaseConfigurations databaseConfigurations,
 									   DatabaseLifeCycles databaseLifeCycles,
 									   EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -104,7 +106,8 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 									   int preparedStatementCacheQueries,
 									   int preparedStatementCacheSizeMiB,
 									   int defaultRowFetchSize) throws DatabaseException {
-		super(new Finalizer(databaseName, false, new File(urlLocation)), false, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+		super(new Finalizer(databaseName, false, new File(urlLocation)), defaultPoolExecutor, context,
+				false, databaseConfigurations, databaseLifeCycles, signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
 				encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup, protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
 				secureRandom, createDatabasesIfNecessaryAndCheckIt);
 		url=getURL(urlLocation, port, databaseName, loginTimeOutInSeconds, connectTimeOutInSeconds, socketTimeOutSeconds, additionalParams, sslMode, sslFactory, sslKey, sslCert, sslRootCert, sslHostNameVerifier, sslPasswordCallBack, sslPassword, databaseMetadataCacheFields, databaseMetadataCacheFieldsMiB, prepareThreshold, preparedStatementCacheQueries, preparedStatementCacheSizeMiB, defaultRowFetchSize);

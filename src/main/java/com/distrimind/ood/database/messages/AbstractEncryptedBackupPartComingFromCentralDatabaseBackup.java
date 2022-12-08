@@ -46,6 +46,7 @@ import com.distrimind.util.io.SerializationTools;
 import java.io.IOException;
 
 /**
+ * Encrypted backup part coming from central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since Utils 3.1.0

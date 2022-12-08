@@ -57,7 +57,7 @@ import java.util.Objects;
 
 
 /**
- * 
+ * Decentralized id field accessor
  * @author Jason Mahdjoub
  * @version 1.1
  * @since OOD 1.7.0
@@ -186,6 +186,11 @@ public class AbstractDecentralizedIDFieldAccessor extends FieldAccessor {
 
 	@Override
 	public boolean isComparable() {
+		return false;
+	}
+
+	@Override
+	public boolean isAlgebraic() {
 		return false;
 	}
 

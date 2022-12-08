@@ -40,6 +40,7 @@ import com.distrimind.ood.database.HookRemoveRequest;
 import com.distrimind.util.DecentralizedValue;
 
 /**
+ * Database event to send
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

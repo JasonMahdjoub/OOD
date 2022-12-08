@@ -51,7 +51,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * 
+ * UUID field accessor
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0.0
@@ -167,7 +167,10 @@ public class UUIDFieldAccessor extends FieldAccessor {
 	public boolean isComparable() {
 		return false;
 	}
-
+	@Override
+	public boolean isAlgebraic() {
+		return false;
+	}
 	@Override
 	public int compare(Object _r1, Object _r2) throws DatabaseException {
 		throw new DatabaseException("Unexpected exception");

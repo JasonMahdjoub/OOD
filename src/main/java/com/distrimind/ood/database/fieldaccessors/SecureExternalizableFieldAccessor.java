@@ -58,7 +58,7 @@ import com.distrimind.ood.database.exceptions.FieldDatabaseException;
 import com.distrimind.util.io.*;
 
 /**
- * 
+ * Secure externalizable field accessor
  * @author Jason Mahdjoub
  * @version 1.2
  * @since OOD 1.0
@@ -298,6 +298,10 @@ public class SecureExternalizableFieldAccessor extends FieldAccessor {
 	@Override
 	public boolean isComparable() {
 		return compareTo_method != null;
+	}
+	@Override
+	public boolean isAlgebraic() {
+		return false;
 	}
 
 	@Override

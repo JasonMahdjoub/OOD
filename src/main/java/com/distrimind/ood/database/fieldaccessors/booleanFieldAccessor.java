@@ -50,7 +50,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 /**
- * 
+ * boolean field accessor
  * @author Jason Mahdjoub
  * @version 1.2
  * @since OOD 1.0
@@ -134,7 +134,10 @@ public class booleanFieldAccessor extends FieldAccessor {
 	public boolean isComparable() {
 		return false;
 	}
-
+	@Override
+	public boolean isAlgebraic() {
+		return false;
+	}
 	@Override
 	public int compare(Object _r1, Object _r2) throws DatabaseException {
 		throw new DatabaseException("Unexpected exception");

@@ -45,6 +45,7 @@ import com.distrimind.util.io.SerializationTools;
 import java.io.IOException;
 
 /**
+ * Message that contains central database backup certificate
  * @author Jason Mahdjoub
  * @version 1.0
  * @since MaDKitLanEdition 3.0.0

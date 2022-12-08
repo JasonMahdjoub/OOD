@@ -53,7 +53,7 @@ import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
 /**
- * 
+ * Composed field accessor
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 1.8
@@ -232,6 +232,10 @@ public class ComposedFieldAccessor extends FieldAccessor {
 
 	@Override
 	public boolean isComparable() {
+		return false;
+	}
+	@Override
+	public boolean isAlgebraic() {
 		return false;
 	}
 

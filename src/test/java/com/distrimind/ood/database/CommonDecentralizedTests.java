@@ -536,7 +536,7 @@ public abstract class CommonDecentralizedTests {
 		public int getInternalSerializedSize() {
 			return 8+SerializationTools.getInternalSize(centralDatabaseBackupPublicKey)
 					+SerializationTools.getInternalSize(certifiedAccountPublicKey)
-					+SerializationTools.getInternalSize(signature, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE)
+					+SerializationTools.getInternalSize(signature, ASymmetricAuthenticatedSignatureType.MAX_SIZE_IN_BYTES_OF_ASYMMETRIC_SIGNATURE)
 					+SerializationTools.getInternalSize(certificateIdentifier, MAX_SIZE_IN_BYTES_OF_CERTIFICATE_IDENTIFIER);
 		}
 
@@ -546,7 +546,7 @@ public abstract class CommonDecentralizedTests {
 			out.writeObject(certifiedAccountPublicKey, false);
 			out.writeBytesArray(certificateIdentifier, false, MAX_SIZE_IN_BYTES_OF_CERTIFICATE_IDENTIFIER);
 			out.writeLong(certificateExpirationTimeUTCInMs);
-			out.writeBytesArray(signature, false, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+			out.writeBytesArray(signature, false, ASymmetricAuthenticatedSignatureType.MAX_SIZE_IN_BYTES_OF_ASYMMETRIC_SIGNATURE);
 		}
 
 		@Override
@@ -555,7 +555,7 @@ public abstract class CommonDecentralizedTests {
 			certifiedAccountPublicKey=in.readObject(false);
 			certificateIdentifier=in.readBytesArray(false, MAX_SIZE_IN_BYTES_OF_CERTIFICATE_IDENTIFIER);
 			certificateExpirationTimeUTCInMs=in.readLong();
-			signature=in.readBytesArray(false, ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE);
+			signature=in.readBytesArray(false, ASymmetricAuthenticatedSignatureType.MAX_SIZE_IN_BYTES_OF_ASYMMETRIC_SIGNATURE);
 			setCertificateExpirationTimeUTCInMsArray();
 		}
 	}
@@ -1903,8 +1903,26 @@ public abstract class CommonDecentralizedTests {
 	public void testSynchroAfterTestsBetweenThreePeers() throws DatabaseException {
 		testSynchronisation();
 		if (centralDatabaseBackupReceiver!=null)
-			centralDatabaseBackupReceiver.cleanObsoleteData();
+			cleanObsoleteData(centralDatabaseBackupReceiver);
 	}
+
+	protected void cleanObsoleteData(com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupReceiver receiver) throws DatabaseException {
+		try {
+			Method cleanObsoleteDataMethod=com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupReceiver.class.getDeclaredMethod("cleanObsoleteData");
+			cleanObsoleteDataMethod.setAccessible(true);
+			cleanObsoleteDataMethod.invoke(receiver);
+		} catch (NoSuchMethodException | IllegalAccessException e) {
+			throw new RuntimeException(e);
+		}
+		catch (InvocationTargetException e)
+		{
+			if (e.getCause() instanceof Exception)
+				throw DatabaseException.getDatabaseException((Exception)e.getCause());
+			else
+				throw new RuntimeException(e);
+		}
+	}
+
 	/*
 	 * @Test(dependsOnMethods={"testAllConnect"}) public void
 	 * testInitDatabaseNetwork() throws DatabaseException { for (Database db :

@@ -177,21 +177,10 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 				if (peersInformedFull)
 					return false;
 			}
-			final AtomicBoolean res = new AtomicBoolean(false);
-			hooks.getRecords(new Filter<DatabaseHooksTable.Record>() {
 
-				@Override
-				public boolean nextRecord(com.distrimind.ood.database.DatabaseHooksTable.Record _record) {
-					if (!_record.getHostID().equals(hook.getHostID()) && !l.contains(_record.getHostID())) {
-						res.set(true);
-						stopTableParsing();
-					}
-
-					return false;
-				}
-			});
-			peersInformedFull = !res.get();
-			return res.get();
+			boolean res=hooks.hasRecords("hostID!=%hid and hostID not in %l", "hid", hook.getHostID(), "l", l);
+			peersInformedFull = !res;
+			return res;
 		}
 
 		boolean isConcernedBy(DecentralizedValue newHostID) throws SerializationDatabaseException {

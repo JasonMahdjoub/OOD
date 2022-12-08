@@ -42,13 +42,14 @@ import com.distrimind.util.crypto.*;
 import java.io.IOException;
 
 /**
+ * Authenticated message destined to central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0
  */
 public interface AuthenticatedCentralDatabaseBackupMessage extends AuthenticatedMessage {
 	int MAX_AUTHENTICATED_MESSAGE_SIZE_IN_BYTES= DatabaseWrapper.MAX_ACCEPTED_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE*2+
-		ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE+ ASymmetricPublicKey.MAX_SIZE_IN_BYTES_OF_PUBLIC_KEY_FOR_SIGNATURE*2+128;
+		ASymmetricAuthenticatedSignatureType.MAX_SIZE_IN_BYTES_OF_ASYMMETRIC_SIGNATURE+ ASymmetricPublicKey.MAX_SIZE_IN_BYTES_OF_PUBLIC_KEY_FOR_SIGNATURE*2+128;
 
 	@Override
 	default void generateAndSetSignatures(AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {

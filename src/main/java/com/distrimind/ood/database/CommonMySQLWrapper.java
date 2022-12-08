@@ -40,6 +40,7 @@ import com.distrimind.ood.database.exceptions.DatabaseVersionException;
 import com.distrimind.ood.database.fieldaccessors.FieldAccessor;
 import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.UtilClassLoader;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.WrappedPassword;
@@ -77,22 +78,22 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		}
 	}
 
-	protected CommonMySQLWrapper(String _database_name,String urlLocation,
-								 DatabaseConfigurations databaseConfigurations,
-								 DatabaseLifeCycles databaseLifeCycles,
-								 EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
-								 EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
-								 EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
-								 AbstractSecureRandom secureRandom,
-								 boolean createDatabasesIfNecessaryAndCheckIt,
-								 int port,
+	protected CommonMySQLWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, String _database_name, String urlLocation,
+			DatabaseConfigurations databaseConfigurations,
+			DatabaseLifeCycles databaseLifeCycles,
+			EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
+			EncryptionProfileProvider encryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup,
+			EncryptionProfileProvider protectedEncryptionProfileProviderForAuthenticatedP2PMessages,
+			AbstractSecureRandom secureRandom,
+			boolean createDatabasesIfNecessaryAndCheckIt,
+			int port,
 
-								 String user,
-								 WrappedPassword password,
-								 String url,
-  								 String characterEncoding
+			String user,
+			WrappedPassword password,
+			String url,
+			String characterEncoding
 								) throws DatabaseException {
-		super(new Finalizer(_database_name, false, new File(url)),  false,
+		super(new Finalizer(_database_name, false, new File(url)),  defaultPoolExecutor,context,false,
 				databaseConfigurations,
 				databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -106,7 +107,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 		this.charset=characterEncoding;
 		this.maxCharSize=getMaxCharSize(this.charset);
 	}
-	protected CommonMySQLWrapper(String _database_name, String urlLocation,
+	protected CommonMySQLWrapper(ScheduledPoolExecutor defaultPoolExecutor, Object context, String _database_name, String urlLocation,
 								 DatabaseConfigurations databaseConfigurations,
 								 DatabaseLifeCycles databaseLifeCycles,
 								 EncryptionProfileProvider signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,
@@ -119,7 +120,8 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 								 WrappedPassword password,
 								 String url
 	) throws DatabaseException {
-		super(new Finalizer(_database_name, false, new File(url)), false,
+		super(new Finalizer(_database_name, false, new File(url)), defaultPoolExecutor, context,
+				false,
 				databaseConfigurations,
 				databaseLifeCycles,
 				signatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup,

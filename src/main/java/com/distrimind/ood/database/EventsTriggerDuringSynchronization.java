@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 /**
+ * Used when synchronization with central database backup or with peers is done
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

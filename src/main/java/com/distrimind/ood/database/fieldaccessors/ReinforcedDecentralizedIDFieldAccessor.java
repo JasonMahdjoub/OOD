@@ -51,7 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * 
+ * Reinforced decentralized id field accessor
  * @author Jason Mahdjoub
  * @version 2.0
  * @since OOD 1.7.0
@@ -156,6 +156,10 @@ public class ReinforcedDecentralizedIDFieldAccessor extends FieldAccessor {
 
 	@Override
 	public boolean isComparable() {
+		return false;
+	}
+	@Override
+	public boolean isAlgebraic() {
 		return false;
 	}
 

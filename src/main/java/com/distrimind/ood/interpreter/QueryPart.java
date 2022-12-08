@@ -42,7 +42,7 @@ import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseSyntaxException;
 
 /**
- * 
+ * Symbol or Syntax rule
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0
@@ -57,10 +57,13 @@ public interface QueryPart {
 
 	<T extends DatabaseRecord> String getValueType(Table<T> table, Map<String, Object> parameters)
 			throws DatabaseSyntaxException;
+	<T extends DatabaseRecord> boolean isAlgebraic(Table<T> table, Map<String, Object> parameters)
+			throws DatabaseSyntaxException ;
 
 	<T extends DatabaseRecord> boolean isMultiType(Table<T> table, Map<String, Object> parameters)
 			throws DatabaseSyntaxException;
 
 	boolean needParenthesis();
+
 
 }

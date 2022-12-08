@@ -53,7 +53,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 /**
- * 
+ * Field accessor for objets convertible to tab
  * @author Jason Mahdjoub
  * @version 1.1
  * @since OOD 1.5
@@ -216,6 +216,10 @@ public class ByteTabConvertibleFieldAccessor extends FieldAccessor {
 
 	@Override
 	public boolean isComparable() {
+		return false;
+	}
+	@Override
+	public boolean isAlgebraic() {
 		return false;
 	}
 

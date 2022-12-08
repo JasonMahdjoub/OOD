@@ -56,7 +56,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * 
+ * Big integer field accessor
  * @author Jason Mahdjoub
  * @version 1.2
  * @since OOD 1.0
@@ -166,6 +166,10 @@ public class BigIntegerFieldAccessor extends FieldAccessor {
 		return true;
 	}
 
+	@Override
+	public boolean isAlgebraic() {
+		return true;
+	}
 	@Override
 	public int compare(Object _r1, Object _r2) throws DatabaseException {
 		try {

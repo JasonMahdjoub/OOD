@@ -35,9 +35,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 package com.distrimind.ood.database;
 
-import java.io.File;
-
 import com.distrimind.ood.database.exceptions.DatabaseException;
+
+import java.io.File;
 
 /**
  * 
@@ -117,12 +117,12 @@ class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<EmbeddedDerbyWr
 	}
 
 	@Override
-	protected EmbeddedDerbyWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
-		return new EmbeddedDerbyWrapper(directory, databaseConfigurations, databaseLifeCycles,
+	protected EmbeddedDerbyWrapper newWrapperInstanceImpl() throws DatabaseException {
+		return new EmbeddedDerbyWrapper(getDefaultPoolExecutor(), getContext(), directory, databaseConfigurations, getDatabaseLifeCycles(),
 				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
-				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, alwaysDisconnectAfterOnTransaction);
+				getSecureRandom(), isCreateDatabasesIfNecessaryAndCheckIt(), alwaysDisconnectAfterOnTransaction);
 	}
 
 	public File getDirectory() {

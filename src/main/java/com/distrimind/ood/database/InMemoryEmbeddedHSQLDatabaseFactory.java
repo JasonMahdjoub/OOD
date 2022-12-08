@@ -3,6 +3,7 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 /**
+ * HSQL driver initializer
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.4.0
@@ -38,12 +39,12 @@ public class InMemoryEmbeddedHSQLDatabaseFactory extends DatabaseFactory<Embedde
 	}
 
 	@Override
-	protected EmbeddedHSQLDBWrapper newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException {
-		return new EmbeddedHSQLDBWrapper(databaseName, true, databaseConfigurations, databaseLifeCycles,
+	protected EmbeddedHSQLDBWrapper newWrapperInstanceImpl() throws DatabaseException {
+		return new EmbeddedHSQLDBWrapper(getDefaultPoolExecutor(), getContext(), databaseName, true, databaseConfigurations, getDatabaseLifeCycles(),
 				signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup==null?null:signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup==null?null:encryptionProfileFactoryForE2EDataDestinedCentralDatabaseBackup.getEncryptionProfileProviderSingleton(),
 				protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages==null?null:protectedEncryptionProfileFactoryProviderForAuthenticatedP2PMessages.getEncryptionProfileProviderSingleton(),
-				getSecureRandom(), createDatabasesIfNecessaryAndCheckIt, concurrencyControl);
+				getSecureRandom(), isCreateDatabasesIfNecessaryAndCheckIt(), concurrencyControl);
 	}
 
 	@Override

@@ -36,6 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database;
 
 import com.distrimind.ood.database.exceptions.DatabaseException;
+import com.distrimind.util.concurrent.ScheduledPoolExecutor;
 import com.distrimind.util.crypto.AbstractSecureRandom;
 import com.distrimind.util.crypto.EncryptionProfileProviderFactory;
 import com.distrimind.util.crypto.SecureRandomType;
@@ -46,7 +47,7 @@ import java.security.NoSuchProviderException;
 
 /**
  * 
- * 
+ * Database initializer
  * @author Jason Mahdjoub
  * @version 1.1
  * @since OOD 2.0.0
@@ -68,6 +69,9 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 
 	private transient DatabaseLifeCycles databaseLifeCycles=null;
 	private transient boolean createDatabasesIfNecessaryAndCheckIt=true;
+
+	private ScheduledPoolExecutor defaultPoolExecutor=null;
+	private Object context=null;
 
 	public DatabaseLifeCycles getDatabaseLifeCycles() {
 		return databaseLifeCycles;
@@ -197,16 +201,35 @@ public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiF
 		}
 	}
 
-	DW newWrapperInstance() throws DatabaseException
+	public ScheduledPoolExecutor getDefaultPoolExecutor() {
+		return defaultPoolExecutor;
+	}
+
+	public void setDefaultPoolExecutor(ScheduledPoolExecutor defaultPoolExecutor) {
+		this.defaultPoolExecutor = defaultPoolExecutor;
+	}
+
+	final DW newWrapperInstance() throws DatabaseException
 	{
-		DW res= newWrapperInstance(databaseLifeCycles, createDatabasesIfNecessaryAndCheckIt);
+		DW res= newWrapperInstanceImpl();
 		res.getDatabaseConfigurationsBuilder().databaseWrapperLoaded();
 		return res;
 	}
 
-	protected abstract DW newWrapperInstance(DatabaseLifeCycles databaseLifeCycles, boolean createDatabasesIfNecessaryAndCheckIt) throws DatabaseException;
+	protected abstract DW newWrapperInstanceImpl() throws DatabaseException;
 
 
 	public abstract void deleteDatabase() throws DatabaseException;
+
+	public Object getContext() {
+		return context;
+	}
+
+	public void setContext(Object context) {
+		if (context==null)
+			throw new NullPointerException();
+		this.context = context;
+	}
+
 
 }

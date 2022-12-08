@@ -41,6 +41,7 @@ import com.distrimind.util.io.SecuredObjectOutputStream;
 import java.io.IOException;
 
 /**
+ * Database backup file coordinate
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

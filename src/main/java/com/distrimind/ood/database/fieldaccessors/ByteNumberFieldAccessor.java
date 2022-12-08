@@ -52,7 +52,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * 
+ * Byte number field accessor
  * @author Jason Mahdjoub
  * @version 1.1
  * @since OOD 1.0
@@ -140,6 +140,10 @@ public class ByteNumberFieldAccessor extends FieldAccessor {
 
 	@Override
 	public boolean isComparable() {
+		return true;
+	}
+	@Override
+	public boolean isAlgebraic() {
 		return true;
 	}
 

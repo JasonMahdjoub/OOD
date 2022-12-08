@@ -42,7 +42,7 @@ import com.distrimind.ood.database.OutputStreamGetter;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 /**
- * 
+ * Big message between two peers
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0

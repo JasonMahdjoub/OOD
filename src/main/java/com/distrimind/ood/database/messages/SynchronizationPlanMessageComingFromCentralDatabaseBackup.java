@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Synchronization plan coming from central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.1.0

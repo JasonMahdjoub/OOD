@@ -38,6 +38,7 @@ package com.distrimind.ood.database.messages;
 import com.distrimind.util.DecentralizedValue;
 
 /**
+ * Channel message destined to central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

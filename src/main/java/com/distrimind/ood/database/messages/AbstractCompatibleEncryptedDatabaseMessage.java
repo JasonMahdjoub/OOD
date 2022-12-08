@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * List of compatible database
  * @author Jason Mahdjoub
  * @version 1.0
  * @since Utils 3.0.0
@@ -53,7 +54,7 @@ import java.util.Set;
 public class AbstractCompatibleEncryptedDatabaseMessage extends DatabaseEvent implements SecureExternalizable {
 	public static final int MAX_SIZE_OF_ENCRYPTED_PACKAGES_NAMES_IN_BYTES=AbstractCompatibleDatabasesMessage.MAX_SIZE_OF_PACKAGES_NAMES_IN_BYTES
 			+32+ SymmetricAuthenticatedSignatureType.MAX_SYMMETRIC_SIGNATURE_SIZE
-			+ ASymmetricAuthenticatedSignatureType.MAX_ASYMMETRIC_SIGNATURE_SIZE
+			+ ASymmetricAuthenticatedSignatureType.MAX_SIZE_IN_BYTES_OF_ASYMMETRIC_SIGNATURE
 			+MessageDigestType.MAX_HASH_LENGTH_IN_BYTES+4;
 	private byte[] encryptedCompatibleDatabases;
 	private DecentralizedValue hostSource;
