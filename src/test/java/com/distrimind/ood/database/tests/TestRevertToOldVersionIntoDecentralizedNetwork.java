@@ -126,8 +126,9 @@ public abstract class TestRevertToOldVersionIntoDecentralizedNetwork extends Tes
 			exchangeMessages();
 			Thread.sleep(getBackupConfiguration().getMaxBackupFileAgeInMs());
 			exchangeMessages();
-			Thread.sleep(1000);
+			Thread.sleep(2000);
 			exchangeMessages();
+			Thread.sleep(500);
 			testSynchronizationWithSavedRecords(db1);
 			testSynchronizationWithSavedRecords(db2);
 			if (!upgradeDatabaseVersionWhenConnectedWithPeers || preferOtherChannelThanLocalChannelIfAvailable)

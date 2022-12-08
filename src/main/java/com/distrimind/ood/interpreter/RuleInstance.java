@@ -1337,7 +1337,7 @@ public class RuleInstance implements QueryPart {
 										}
 										if (!found)
 											throw new DatabaseSyntaxException(
-													"Field " + sf.field + " not found. Unexpected error !");
+													"Field " + sql_field_name + " not found. Unexpected error !");
 
 									} else {
 										if (fa2.getFieldName().equals(fa1.getFieldName()))
@@ -1533,7 +1533,7 @@ public class RuleInstance implements QueryPart {
 								res.append("(");
 								int fieldsNumber = 0;
 								for (SqlField sf : sfs) {
-
+									String sql_field_name=sqlTableName.get()+"."+sf.shortFieldWithoutQuote;
 
 									++fieldsNumber;
 									if (fieldsNumber > 1)
@@ -1544,7 +1544,7 @@ public class RuleInstance implements QueryPart {
 											.append(comp.getType().getContent());
 									boolean found = false;
 									for (SqlFieldInstance sfi : sfis) {
-										if (sfi.field.equals(sf.field)) {
+										if (sfi.fieldWithoutQuote.equals(sql_field_name)) {
 
 											if (p == null) {
 												res.append("NULL");
@@ -1559,7 +1559,7 @@ public class RuleInstance implements QueryPart {
 									}
 									if (!found)
 										throw new DatabaseSyntaxException(
-												"Field " + sf.field + " not found. Unexpected error !");
+												"Field " + sql_field_name + " not found. Unexpected error !");
 								}
 								res.append(")");
 								++parameterIndex;
