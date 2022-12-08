@@ -53,7 +53,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * 
  * 
- * 
+ * Converter of object to byte tab
  * @author Jason Mahdjoub
  * @version 1.4
  * @since OOD 1.5

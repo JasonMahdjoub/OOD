@@ -41,6 +41,7 @@ import com.distrimind.util.crypto.WrappedPassword;
 import java.io.File;
 
 /**
+ * PostgreSQL driver initializer
  * @author Jason Mahdjoub
  * @version 1.0
  * @since Utils 3.0.0

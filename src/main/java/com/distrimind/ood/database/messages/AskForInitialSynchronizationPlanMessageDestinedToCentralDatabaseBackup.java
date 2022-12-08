@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.Set;
 
 /**
+ * Initial synchronization message with central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.1.0

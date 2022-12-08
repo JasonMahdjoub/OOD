@@ -43,6 +43,7 @@ import com.distrimind.util.io.*;
 import java.io.IOException;
 
 /**
+ * Authenticated message
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

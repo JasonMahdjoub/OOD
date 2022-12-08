@@ -41,6 +41,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * This annotation permit to assemble several annotations of type {@link TablePeriodicTask}
  * @author Jason Mahdjoub
  * @version 1.0
  * @since MaDKitLanEdition 3.2.0

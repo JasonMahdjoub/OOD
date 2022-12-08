@@ -42,6 +42,7 @@ import java.io.File;
 import java.nio.charset.Charset;
 
 /**
+ * Mysql driver initializer
  * @author Jason Mahdjoub
  * @version 1.0
  * @since Utils 2.5.0

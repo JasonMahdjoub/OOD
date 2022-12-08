@@ -47,6 +47,7 @@ import java.sql.Statement;
 
 
 /**
+ * Common HSQL/H2 driver
  * @author Jason Mahdjoub
  * @version 1.0
  * @since MaDKitLanEdition 2.0

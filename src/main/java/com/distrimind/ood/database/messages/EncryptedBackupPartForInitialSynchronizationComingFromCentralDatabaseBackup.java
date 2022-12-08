@@ -5,6 +5,7 @@ import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.RandomInputStream;
 
 /**
+ * Encrypted backup part for initial synchronization from central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.1.0

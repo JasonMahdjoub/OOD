@@ -52,7 +52,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * 
+ * Byte number field accessor
  * @author Jason Mahdjoub
  * @version 1.1
  * @since OOD 1.0

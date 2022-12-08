@@ -56,7 +56,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 
+ * Foreign key field accessor
  * @author Jason Mahdjoub
  * @version 1.3
  * @since OOD 1.0

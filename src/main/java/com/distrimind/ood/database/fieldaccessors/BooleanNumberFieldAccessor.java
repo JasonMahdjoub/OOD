@@ -55,7 +55,7 @@ import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.RandomOutputStream;
 
 /**
- * 
+ * Boolean number field accessor
  * @author Jason Mahdjoub
  * @version 1.2
  * @since OOD 1.0

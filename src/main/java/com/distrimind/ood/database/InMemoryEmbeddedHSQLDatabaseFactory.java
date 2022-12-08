@@ -3,6 +3,7 @@ package com.distrimind.ood.database;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 
 /**
+ * HSQL driver initializer
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.4.0

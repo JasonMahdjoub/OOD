@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Table cursor
  * @author Jason Mahdjoub
  * @version 1.0
  * @since Utils 2.0.0

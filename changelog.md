@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.1.26 STABLE (Build: 5780) (from 01/04/2013 to 07/04/2022)
+3.2.0 STABLE (Build: 5995) (from 01/04/2013 to 06/12/2022)
 
 # Creator(s):
 * Jason MAHDJOUB
@@ -9,6 +9,19 @@ Object Oriented Database
 * Jason MAHDJOUB (Entered in the team at 01/04/2013)
 
 # Changes:
+
+
+### 3.2.0 STABLE (06/12/2022)
+#### New feature(s)
+* Add database tasks manager, that permit to schedule periodic tasks executed into the database. See package com.distrimind.ood.database.tasks
+* Add possibility to specify a context with DatabaseWrapper. See DatabaseFactory.setContext(Object)
+* Add operator IN/NOT IN into pseudo SQL interpreter, that permit to test an identifier with a collection
+* Implements mathematical operator (+, -, *, /, %) with pseudo SQL queries. Theses operators work with Numbers, and Date values.
+#### Internal change(s)
+* Target java compatibility is set to Java 11 but source code still use Java 8
+* Update Utils to 5.24.0
+* Update dependencies
+* Significant optimizations of pseudo SQL interpreter.
 
 
 ### 3.1.26 STABLE (07/04/2022)

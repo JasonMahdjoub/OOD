@@ -51,6 +51,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 /**
+ * PostgreSQL driver
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

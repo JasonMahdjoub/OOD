@@ -39,6 +39,7 @@ import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.SecureExternalizable;
 
 /**
+ * Message coming from central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOS 3.0.0

@@ -41,7 +41,7 @@ import com.distrimind.ood.database.messages.MessageDestinedToCentralDatabaseBack
 import com.distrimind.ood.database.messages.P2PDatabaseEventToSend;
 
 /**
- * 
+ * Network database event
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0

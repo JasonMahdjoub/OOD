@@ -5,6 +5,7 @@ import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.RandomInputStream;
 
 /**
+ * Encrypted backup part for restoration coming from central database backup
  * @author Jason Mahdjoub
  * @version 2.0
  * @since OOD 3.0.0

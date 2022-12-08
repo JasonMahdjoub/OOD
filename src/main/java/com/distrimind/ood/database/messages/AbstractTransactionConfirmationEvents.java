@@ -45,6 +45,7 @@ import com.distrimind.util.io.SerializationTools;
 import java.io.IOException;
 
 /**
+ * Transaction confirmation events
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

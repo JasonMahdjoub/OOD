@@ -44,6 +44,7 @@ import com.distrimind.util.io.SerializationTools;
 import java.io.IOException;
 
 /**
+ * Message destined to central database backup to notify a peer deletion
  * @author Jason Mahdjoub
  * @version 1.0
  * @since MaDKitLanEdition 3.0.0

@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * List of compatible database
  * @author Jason Mahdjoub
  * @version 1.0
  * @since Utils 3.0.0

@@ -42,6 +42,7 @@ import com.distrimind.util.crypto.*;
 import java.io.IOException;
 
 /**
+ * Authenticated message destined to central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

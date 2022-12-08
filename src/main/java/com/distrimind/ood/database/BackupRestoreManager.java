@@ -63,6 +63,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
+ * Backup restore manager
  * @author Jason Mahdjoub
  * @version 2.0
  * @since MaDKitLanEdition 2.0.0

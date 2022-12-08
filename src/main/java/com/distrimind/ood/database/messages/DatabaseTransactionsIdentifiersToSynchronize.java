@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Identifiers of transactions to synchronize with other peers
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

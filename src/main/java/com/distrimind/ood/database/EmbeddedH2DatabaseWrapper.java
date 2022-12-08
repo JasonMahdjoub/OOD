@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 /**
+ * H2 Driver
  * @author Jason Mahdjoub
  * @version 1.1
  * @since MaDKitLanEdition 2.0

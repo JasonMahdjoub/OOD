@@ -49,7 +49,7 @@ import com.distrimind.ood.database.fieldaccessors.ForeignKeyFieldAccessor;
 import com.distrimind.util.AbstractDecentralizedID;
 
 /**
- * 
+ * Symbol instance
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0

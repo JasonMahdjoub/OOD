@@ -9,6 +9,7 @@ import com.distrimind.util.io.*;
 import java.io.IOException;
 
 /**
+ * Message that ask for backup part to central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since MaDKitLanEdition 3.0.0

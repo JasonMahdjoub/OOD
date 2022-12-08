@@ -55,7 +55,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 /**
- * 
+ * Big decimal field accessor
  * @author Jason Mahdjoub
  * @version 1.2
  * @since OOD 1.0

@@ -51,7 +51,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * 
+ * UUID field accessor
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0.0

@@ -36,7 +36,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.exceptions;
 
 /**
- * 
+ * Transaction cancel exception
  * @author jason
  * @version 1.0
  * @since OOD 2.0.0

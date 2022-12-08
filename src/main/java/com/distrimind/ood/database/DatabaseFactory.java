@@ -47,7 +47,7 @@ import java.security.NoSuchProviderException;
 
 /**
  * 
- * 
+ * Database initializer
  * @author Jason Mahdjoub
  * @version 1.1
  * @since OOD 2.0.0

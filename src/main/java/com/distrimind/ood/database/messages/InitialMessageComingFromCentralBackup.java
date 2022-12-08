@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * Initial message coming from central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

@@ -57,7 +57,7 @@ import java.util.Objects;
 
 
 /**
- * 
+ * Decentralized id field accessor
  * @author Jason Mahdjoub
  * @version 1.1
  * @since OOD 1.7.0

@@ -38,6 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import java.util.Map;
 
 /**
+ * Last validated local and distant transaction identifier
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

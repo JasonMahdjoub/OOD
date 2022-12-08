@@ -38,6 +38,7 @@ package com.distrimind.ood.database.messages;
 import com.distrimind.util.DecentralizedValue;
 
 /**
+ * Backup channel initialization message from central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

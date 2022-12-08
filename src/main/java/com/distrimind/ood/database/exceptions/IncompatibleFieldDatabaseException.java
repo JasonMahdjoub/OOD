@@ -37,7 +37,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.exceptions;
 
 /**
- * 
+ * Incompatible field database exception
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 1.5

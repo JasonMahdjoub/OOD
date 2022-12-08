@@ -50,7 +50,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 /**
- * 
+ * boolean field accessor
  * @author Jason Mahdjoub
  * @version 1.2
  * @since OOD 1.0

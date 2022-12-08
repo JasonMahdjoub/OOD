@@ -44,6 +44,7 @@ import com.distrimind.util.io.*;
 import java.io.IOException;
 
 /**
+ * Message to ask meta data to central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

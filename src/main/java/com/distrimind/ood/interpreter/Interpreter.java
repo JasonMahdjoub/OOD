@@ -43,7 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 
+ * Pseudo SQL interpreter
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0
@@ -120,8 +120,11 @@ public class Interpreter {
 				int p = s.match(cs);
 
 				if (p > 0) {
-					if (p>1 && cs.charAt(p-1)==')')
-						--p;
+					if (p>1) {
+						char c=cs.charAt(p-1);
+						if (c==')' || c=='(')
+							--p;
+					}
 					if (bestMatchLength == -1 || bestMatchLength < p || bestSymbol==SymbolType.IDENTIFIER) {
 						bestMatchLength = p;
 						bestSymbol = s;
@@ -239,7 +242,6 @@ public class Interpreter {
 		for (QueryPart qp : parts)
 		{
 			if (qp instanceof Symbol) {
-				Symbol s=(Symbol) qp;
 				res.append("<")
 						.append(((Symbol) qp).getType().name())
 						.append(">");

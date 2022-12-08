@@ -33,6 +33,7 @@ import com.distrimind.util.io.RandomInputStream;
 import com.distrimind.util.io.SecureExternalizable;
 
 /**
+ * Big data event to send with central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.0.0

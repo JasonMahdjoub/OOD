@@ -51,7 +51,6 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.sql.*;
@@ -59,7 +58,7 @@ import java.util.Date;
 import java.util.*;
 
 /**
- * 
+ * Table field accessor
  * @author Jason Mahdjoub
  * @version 3.0
  * @since OOD 1.0
@@ -425,10 +424,10 @@ public abstract class FieldAccessor {
 			List<Class<?>> parentFields) throws DatabaseException {
 
 		ArrayList<FieldAccessor> res = new ArrayList<>();
-		try {
+		//try {
 			FieldAccessPrivilegedAction fapa = new FieldAccessPrivilegedAction(database_record_class);
 			int pkNumber=0;
-			for (java.lang.reflect.Field f : AccessController.doPrivileged(fapa)) {
+			for (java.lang.reflect.Field f : fapa.run()) {
 				if (f.isAnnotationPresent(PrimaryKey.class)
 						|| f.isAnnotationPresent(AutoPrimaryKey.class)
 						|| f.isAnnotationPresent(RandomPrimaryKey.class)) {
@@ -437,7 +436,7 @@ public abstract class FieldAccessor {
 				}
 			}
 			final boolean severalPrimaryKeysPresentIntoTable=pkNumber>1;
-			for (java.lang.reflect.Field f : AccessController.doPrivileged(fapa)) {
+			for (java.lang.reflect.Field f : fapa.run()) {
 				if (f.isAnnotationPresent(com.distrimind.ood.database.annotations.Field.class)
 						|| (parentFieldName == null
 								&& (f.isAnnotationPresent(PrimaryKey.class) || f.isAnnotationPresent(ForeignKey.class)
@@ -560,10 +559,10 @@ public abstract class FieldAccessor {
 					}
 				}
 			}
-		} catch (PrivilegedActionException e) {
+		/*} catch (PrivilegedActionException e) {
 			throw new DatabaseException(
 					"Impossible to access to fields of the class " + database_record_class.getName(), e);
-		}
+		}*/
 
 		res.sort(Comparator.comparing(FieldAccessor::getFieldName));
 		return res;
@@ -600,7 +599,7 @@ public abstract class FieldAccessor {
 		ArrayList<Class<?>> list_classes = new ArrayList<>();
 
 		FieldAccessPrivilegedAction fapa = new FieldAccessPrivilegedAction(_original_class);
-		ArrayList<Field> fields = AccessController.doPrivileged(fapa);
+		ArrayList<Field> fields = fapa.run();
 
 		for (java.lang.reflect.Field f : fields) {
 			if (f.isAnnotationPresent(ForeignKey.class)) {
@@ -626,7 +625,7 @@ public abstract class FieldAccessor {
 		_list_classes.add(_new_class);
 
 		FieldAccessPrivilegedAction fapa = new FieldAccessPrivilegedAction(_new_class);
-		ArrayList<Field> fields = AccessController.doPrivileged(fapa);
+		ArrayList<Field> fields = fapa.run();
 
 		for (java.lang.reflect.Field f : fields) {
 			if (f.isAnnotationPresent(ForeignKey.class)) {
@@ -648,7 +647,7 @@ public abstract class FieldAccessor {
 		ArrayList<Class<?>> list_classes = new ArrayList<>();
 
 		FieldAccessPrivilegedAction fapa = new FieldAccessPrivilegedAction(_original_class);
-		ArrayList<Field> fields = AccessController.doPrivileged(fapa);
+		ArrayList<Field> fields = fapa.run();
 
 		for (java.lang.reflect.Field f : fields) {
 			if (f.isAnnotationPresent(ForeignKey.class) && f.isAnnotationPresent(PrimaryKey.class)) {
@@ -672,7 +671,7 @@ public abstract class FieldAccessor {
 		_list_classes.add(_new_class);
 
 		FieldAccessPrivilegedAction fapa = new FieldAccessPrivilegedAction(_new_class);
-		ArrayList<Field> fields = AccessController.doPrivileged(fapa);
+		ArrayList<Field> fields = fapa.run();
 
 		for (java.lang.reflect.Field f : fields) {
 			if (f.isAnnotationPresent(ForeignKey.class) && f.isAnnotationPresent(PrimaryKey.class)) {

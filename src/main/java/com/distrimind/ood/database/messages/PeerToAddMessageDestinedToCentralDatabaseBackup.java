@@ -44,6 +44,7 @@ import com.distrimind.util.io.SerializationTools;
 import java.io.IOException;
 
 /**
+ * Added peer message destined to central database backup
  * @author Jason Mahdjoub
  * @version 1.0
  * @since MaDKitLanEdition 3.0.0

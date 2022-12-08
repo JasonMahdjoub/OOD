@@ -42,7 +42,7 @@ import com.distrimind.ood.database.Table;
 import com.distrimind.ood.database.exceptions.DatabaseSyntaxException;
 
 /**
- * 
+ * Symbol or Syntax rule
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0

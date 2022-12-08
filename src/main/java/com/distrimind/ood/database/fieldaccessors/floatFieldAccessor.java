@@ -51,7 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * 
+ * float field accessor
  * @author Jason Mahdjoub
  * @version 1.1
  * @since OOD 1.0

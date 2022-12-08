@@ -51,7 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * 
+ * double field accessor
  * @author Jason Mahdjoub
  * @version 1.2
  * @since OOD 1.0

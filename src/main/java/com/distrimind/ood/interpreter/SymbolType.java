@@ -39,7 +39,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 
+ * Type of symbol
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0
@@ -53,21 +53,21 @@ public enum SymbolType {
 	GREATER_OR_EQUAL_COMPARATOR(true,false, false, true,false, "^>=", new String[] { ">=" }, ">="),
 	OPEN_PARENTHESIS(true, false, false, false, false, "^\\(", new String[] { "(" }, "("),
 	CLOSE_PARENTHESIS(true, false, false, false, false, "^\\)", new String[] { ")" }, ")"),
-	AND_CONDITION(false,true, false, false,true, "^[ ][Aa][Nn][Dd][ ]", null, " AND "),
-	OR_CONDITION(false, true, false, false,true, "^[ ][Oo][Rr][ ]", null, " OR "),
+	AND_CONDITION(false,true, false, false,true, "^[ ]?[Aa][Nn][Dd][ \\(]", null, " AND "),
+	OR_CONDITION(false, true, false, false,true, "^[ ]?[Oo][Rr][ \\(]", null, " OR "),
 
 
-	LIKE(true, false, false, false,false, "^[ ](L|l)(I|i)(K|k)(E|e)[ ]", new String[] { " LIKE " }, " LIKE "),
-	NOT_LIKE(true, false,false, false,true,"^[ ](N|n)(O|o)(T|t)[ _](L|l)(I|i)(K|k)(E|e)[ ]",new String[] {" NOT LIKE "," NOT_LIKE " }," NOT LIKE "),
-	IS(true, false,false, false,false,"^[ ](I|i)(S|s)[ ]",new String[] {" IS "}," IS "),
-	IS_NOT(true, false,false, false,true,"^[ ](I|i)(S|s)[ _](N|n)(O|o)(T|t)[ ]",new String[] {" IS NOT "," IS_NOT " }," IS NOT "),
-	IN(true, false,false, false,false,"^[ ](I|i)(N|n)[ ]",new String[] {" IN "}," IN "),
-	NOT_IN(true, false,false, false,true,"^[ ](N|n)(O|o)(T|t)[ _](I|i)(N|n)[ ]",new String[] {" NOT IN ", " NOT_IN "}," NOT IN "),
+	LIKE(true, false, false, false,false, "^[ ]?(L|l)(I|i)(K|k)(E|e)[ ]", new String[] { " LIKE " }, " LIKE "),
+	NOT_LIKE(true, false,false, false,true,"^[ ]?(N|n)(O|o)(T|t)[ _](L|l)(I|i)(K|k)(E|e)[ ]",new String[] {" NOT LIKE "," NOT_LIKE " }," NOT LIKE "),
+	IS(true, false,false, false,false,"^[ ]?(I|i)(S|s)[ ]",new String[] {" IS "}," IS "),
+	IS_NOT(true, false,false, false,true,"^[ ]?(I|i)(S|s)[ _](N|n)(O|o)(T|t)[ ]",new String[] {" IS NOT "," IS_NOT " }," IS NOT "),
+	IN(true, false,false, false,false,"^[ ]?(I|i)(N|n)[ ]",new String[] {" IN "}," IN "),
+	NOT_IN(true, false,false, false,true,"^[ ]?(N|n)(O|o)(T|t)[ _](I|i)(N|n)[ ]",new String[] {" NOT IN ", " NOT_IN "}," NOT IN "),
 	PLUS(true, false,true, false,false,"^[+]",new String[] {"+"},"+"),
 	MINUS(true, false,true, false, false,"^[-]",new String[] {"-"},"-"),
 	MULTIPLY(true, false,true, false,false,"^[*]",new String[] {"*"},"*"),
 	DIVIDE(true, false,true, false,false,"^/",new String[] {"/"},"/"),
-	MODULO(true, false,true, false,false,"^[ ]MOD[ ]",new String[] {" MOD "},"%"),
+	MODULO(true, false,true, false,false,"^[ ]?MOD[ ]",new String[] {" MOD "},"%"),
 	NULL(false, false, false, false,false, "^(N|n)(U|u)(L|l)(L|l)( |\\)|$)", null, "NULL"),
 	NUMBER(false, false, false, false,false, "^(([0-9]+(\\.[0-9]+)?(E(\\-|\\+)?[0-9]+)?)|([0-9]*\\.[0-9]+(E(\\-|\\+)?[0-9]+)?))", null, null),
 	PARAMETER( false, false, false, false,false, "^(\\%|\\:)[a-zA-Z\\-_][0-9a-zA-Z\\-_]*", null, null),

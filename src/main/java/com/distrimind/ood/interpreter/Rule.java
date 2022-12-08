@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.regex.Pattern;
 
 /**
+ * Type of rule
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 2.0
@@ -103,9 +104,9 @@ public enum Rule {
                 {FACTOR, ADD_OPERATOR, EXPRESSION},
         };
         Rule.SIGNED_VALUE.rulesComposition=new Rule[][]{
-                {WORD_RULE, EXPRESSION},
-                {WORD_RULE, FACTOR},
-                {WORD_RULE, WORD_RULE}
+                {ADD_OPERATOR, EXPRESSION},
+                {ADD_OPERATOR, FACTOR},
+                {ADD_OPERATOR, WORD_RULE}
         };
         Rule.COMPARE.rulesComposition=new Rule[][]{
                 {EXPRESSION, OP_COMP, EXPRESSION},
