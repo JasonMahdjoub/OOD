@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.2.0 STABLE (Build: 5999) (from 01/04/2013 to 08/12/2022)
+3.2.0 STABLE (Build: 6016) (from 01/04/2013 to 08/12/2022)
 
 # Creator(s):
 * Jason MAHDJOUB
