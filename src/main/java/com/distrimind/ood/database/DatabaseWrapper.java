@@ -4222,7 +4222,6 @@ public abstract class DatabaseWrapper implements Cleanable {
 		return isCleaned();
 	}
 
-	@Override
 	public final void close() {
 		try {
 			Method mc=DatabaseTasksManager.class.getDeclaredMethod("close");
