@@ -2,7 +2,7 @@ package com.distrimind.ood;
 
 import android.util.Log;
 
-import com.distrimind.util.OSVersion;
+import com.distrimind.util.systeminfo.OSVersion;
 
 import org.junit.Test;
 
