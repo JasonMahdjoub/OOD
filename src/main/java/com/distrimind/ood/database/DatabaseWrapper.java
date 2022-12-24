@@ -70,8 +70,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
@@ -5599,18 +5597,6 @@ public abstract class DatabaseWrapper implements Cleanable {
 			}
 		}
 		return res;
-		/*
-		 * Object res=null; if (_transaction.doesWriteData()) { if
-		 * (!transaction_already_running) { transaction_already_running=true; try {
-		 * res=_transaction.run(this); sql_connection.commit(); }
-		 * catch(DatabaseException e) { try { sql_connection.rollback(); }
-		 * catch(SQLException se) { throw new
-		 * DatabaseIntegrityException("Impossible to rollback the database changes",
-		 * se); } throw e; } catch(SQLException e) { throw
-		 * DatabaseException.getDatabaseException(e); } finally {
-		 * transaction_already_running=false; } } else { res=_transaction.run(this); } }
-		 * else { res=_transaction.run(this); } return res;
-		 */
 	}
 
 	protected abstract boolean isDuplicateKeyException(SQLException e);
@@ -5666,7 +5652,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 		}, false);
 	}
 	/**
-	 * According a class name, returns the instance of a table which inherits the
+	 * According to a class name, returns the instance of a table which inherits the
 	 * class <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code>. The
 	 * returned table is always the same instance.
 	 *
@@ -5674,7 +5660,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 	 *            the full class name (with its package)
 	 * @return the corresponding table.
 	 * @throws DatabaseException
-	 *             if the class have not be found or if problems occur during the
+	 *             if the class have not been found or if problems occur during the
 	 *             instantiation.
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
@@ -5683,7 +5669,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 		return getTableInstance(_table_name, -1);
 	}
 	/**
-	 * According a class name, returns the instance of a table which inherits the
+	 * According to a class name, returns the instance of a table which inherits the
 	 * class <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code>. The
 	 * returned table is always the same instance.
 	 * 
@@ -5692,7 +5678,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 	 * @param databaseVersion the database version (if negative, takes the last version)
 	 * @return the corresponding table.
 	 * @throws DatabaseException
-	 *             if the class have not be found or if problems occur during the
+	 *             if the class have not been found or if problems occur during the
 	 *             instantiation.
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
@@ -5722,24 +5708,10 @@ public abstract class DatabaseWrapper implements Cleanable {
 			finalizer.unlockWrite();
 		}
 		
-		/*
-		 * try(ReadWriteLock.Lock lock=locker.getAutoCloseableWriteLock()) { if
-		 * (_table_name==null) throw new
-		 * NullPointerException("The parameter _table_name is a null pointer !");
-		 * 
-		 * try { Class<?> c=UtilClassLoader.getLoader().loadClass(_table_name); if
-		 * (Table.class.isAssignableFrom(c)) {
-		 * 
-		 * @SuppressWarnings("unchecked") Class<? extends Table<?>> class_table=(Class<?
-		 * extends Table<?>>)c; return getTableInstance(class_table); } else throw new
-		 * DatabaseException("The class "+_table_name+" does not extends "+Table.class.
-		 * getSqlTableName()); } catch (ClassNotFoundException e) { throw new
-		 * DatabaseException("Impossible to found the class/table "+_table_name); } }
-		 */
 	}
 
 	/**
-	 * According a Class&lsaquo;? extends Table&lsaquo;?&rsaquo;&rsaquo;, returns
+	 * According to a Class&lsaquo;? extends Table&lsaquo;?&rsaquo;&rsaquo;, returns
 	 * the instance of a table which inherits the class
 	 * <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code>. The returned
 	 * table is always the same instance.
@@ -5748,7 +5720,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 	 *            the class type
 	 * @return the corresponding table.
 	 * @throws DatabaseException
-	 *             if the class have not be found or if problems occur during the
+	 *             if the class have not been found or if problems occur during the
 	 * 	 *             instantiation.
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
@@ -5765,7 +5737,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 
 	/**
-	 * According a Class&lsaquo;? extends Table&lsaquo;?&rsaquo;&rsaquo;, returns
+	 * According to a Class&lsaquo;? extends Table&lsaquo;?&rsaquo;&rsaquo;, returns
 	 * the instance of a table which inherits the class
 	 * <code>Table&lsaquo;T extends DatabaseRecord&rsaquo;</code>. The returned
 	 * table is always the same instance.
@@ -5775,7 +5747,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 	 * @param databaseVersion the database version (if negative, takes the last version)
 	 * @return the corresponding table.
 	 * @throws DatabaseException
-	 *             if the class have not be found or if problems occur during the
+	 *             if the class have not been found or if problems occur during the
 	 * 	 *             instantiation.
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
@@ -6651,17 +6623,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 					}
 					return allNotFound;
 
-				} /*catch (ClassNotFoundException e) {
-							throw new DatabaseException(
-									"Impossible to access to t)he list of classes contained into the package "
-											+ configuration.getPackage().getSqlTableName(),
-									e);
-						} catch (IOException e) {
-							throw new DatabaseException(
-									"Impossible to access to the list of classes contained into the package "
-											+ configuration.getPackage().getSqlTableName(),
-									e);
-						}*/ catch (Exception e) {
+				} catch (Exception e) {
 					throw Objects.requireNonNull(DatabaseException.getDatabaseException(e));
 				}
 			}
@@ -6732,12 +6694,11 @@ public abstract class DatabaseWrapper implements Cleanable {
 		}
 	}
 
-	<TT extends Table<?>> TT newInstance(Class<TT> _class_table, int databaseVersion) throws InstantiationException, IllegalAccessException,
-			IllegalArgumentException, InvocationTargetException, DatabaseException, PrivilegedActionException {
+	<TT extends Table<?>> TT newInstance(Class<TT> _class_table, int databaseVersion) throws Exception {
 		DefaultConstructorAccessPrivilegedAction<TT> class_privilege = new DefaultConstructorAccessPrivilegedAction<>(
                 _class_table);
 
-		Constructor<TT> const_table = AccessController.doPrivileged(class_privilege);
+		Constructor<TT> const_table = class_privilege.run();
 
 
 		TT t = const_table.newInstance();
@@ -6873,7 +6834,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 
 	/**
-	 * Returns the OOD (and non native) backup manager.
+	 * Returns the OOD (and not native) backup manager.
 	 * Backups into this manager are done in real time.
 	 * Backups and restores into this backup manager can be done manually.
 	 * Enables to make incremental database backups, and database restore.
@@ -6891,7 +6852,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 	}
 
 	/**
-	 * Returns the OOD (and non native) backup manager.
+	 * Returns the OOD (and not native) backup manager.
 	 * Backups into this manager are done in real time.
 	 * Backups and restores into this backup manager can be done manually.
 	 * Enables to make incremental database backups, and database restore.
@@ -6910,7 +6871,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 
 	/**
-	 * Returns the OOD (and non native) backup manager.
+	 * Returns the OOD (and not native) backup manager.
 	 * Backups into this manager are NOT done in real time.
 	 * Backups and restores into this backup manager can be done manually.
 	 * Enables to make incremental database backups, and database restore.

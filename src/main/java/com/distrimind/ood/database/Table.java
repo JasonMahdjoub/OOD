@@ -61,9 +61,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
-import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.sql.*;
 import java.util.*;
@@ -101,18 +99,18 @@ import java.util.regex.Pattern;
  * values. Fields which have the annotation
  * {@link com.distrimind.ood.database.annotations.ForeignKey} must be
  * DatabaseRecord instances.
- * 
+ * <br>
  * It is possible also to add the annotation
  * {@link com.distrimind.ood.database.annotations.LoadToMemory} just before the
  * table class declaration. If this annotation is present, the content of the
- * table will loaded into the memory which will speed up queries. But note that
+ * table will be loaded into the memory which will speed up queries. But note that
  * every table pointed throw a foreign key in this table must have the same
  * annotation. An exception will be generated, during the class instantiation,
  * if this condition is not respected. The user must be careful to not generate
  * a problem of circularity with the declared foreign keys between every
  * database table. An exception is generated during the table instantiation if
  * this problem occurs.
- * 
+ * <br>
  * To get the unique instance of its table, the user must call the static
  * functions {@link DatabaseWrapper#getTableInstance(Class)} or
  * {@link DatabaseWrapper#getTableInstance(String)}. The user must never call
@@ -121,7 +119,7 @@ import java.util.regex.Pattern;
  * containing the class tables of the same database to a Sql database throw the
  * function
  * {@link DatabaseConfigurationsBuilder#addConfiguration(DatabaseConfiguration, boolean)}.
- * 
+ * <br>
  * This class is thread safe
  * 
  * @author Jason Mahdjoub
@@ -337,11 +335,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	/**
 	 * Tells is this table is cached into memory.
-	 *
+	 * <br>
 	 * To support cache, the table,
 	 * cannot be load into memory (see {@link com.distrimind.ood.database.annotations.LoadToMemory}),
-	 * must not contains a secret field like an encryption key,
-	 * and must not contains a field whose cache is disabled (see {@link com.distrimind.ood.database.annotations.Field#disableCache()})
+	 * must not contain a secret field like an encryption key,
+	 * and must not contain a field whose cache is disabled (see {@link com.distrimind.ood.database.annotations.Field#disableCache()})
 	 *
 	 * @return true if this table is cached
 	 */
@@ -465,13 +463,12 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 				class_record);
 
 		try {
-			default_constructor_field = AccessController.doPrivileged(capa);
-		} catch (PrivilegedActionException e1) {
+			default_constructor_field = capa.run();
+		} catch (Exception e1) {
 			throw new DatabaseException(
 					"Impossible to find the default constructor of the class " + class_record.getName(), e1);
 		}
-		grouped_results_constructor = AccessController
-				.doPrivileged((PrivilegedAction<Constructor<GroupedResults>>) () -> {
+		grouped_results_constructor = ((PrivilegedAction<Constructor<GroupedResults>>) () -> {
 					Constructor<GroupedResults> res;
 					try {
 						res = GroupedResults.class.getDeclaredConstructor(
@@ -483,7 +480,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						System.exit(-1);
 						return null;
 					}
-				});
+				}).run();
 
 
 	}
@@ -1479,8 +1476,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	private void getFromPart(StringBuilder sb, boolean includeAllJunctions, Set<TableJunction> tablesJunction) {
 		sb.append(this.getSqlTableName());
-		if (this.getClass().getSimpleName().equalsIgnoreCase("LastValidatedDistantIDPerClientTable"))
-		if (!includeAllJunctions && (tablesJunction == null || tablesJunction.size() == 0))
+		if (this.getClass().getSimpleName().equalsIgnoreCase("LastValidatedDistantIDPerClientTable") &&
+				(!includeAllJunctions && (tablesJunction == null || tablesJunction.size() == 0)))
 			return ;
 
 		for (ForeignKeyFieldAccessor fa : getForeignKeysFieldAccessors()) {
@@ -2380,14 +2377,6 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		return table_name;
 	}
 
-	/*
-	 * Format the a class name by replacing '.' chars by '_' chars. Use also upper
-	 * case.
-	 * 
-	 * @param c
-	 *            a class
-	 * @return the new class name format
-	 */
 
 	@Override
 	public String toString() {
@@ -2665,8 +2654,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * Cursors enable to parse query data randomly without loading data into memory.
 	 * Query data is however loaded into cache memory in order to get better performance.
 	 * Cursors can be used with graphical list with does need to screen all data in one time.
-	 *
-	 * This function does not returns ordered records.
+	 * <br>
+	 * This function does not return ordered records.
 	 *
 	 * @return a cursor which point the results of the asked query
 	 */
@@ -2678,8 +2667,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * Cursors enable to parse query data randomly without loading data into memory.
 	 * Query data is however loaded into cache memory in order to get better performance.
 	 * Cursors can be used with graphical list with does need to screen all data in one time.
-	 *
-	 * This function does not returns ordered records.
+	 * <br>
+	 * This function does not return ordered records.
 	 * @param cacheSize the data stored in cache during cursor parsing
 	 *
 	 * @return a cursor which point the results of the asked query
@@ -2693,8 +2682,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * Cursors enable to parse query data randomly without loading data into memory.
 	 * Query data is however loaded into cache memory in order to get better performance.
 	 * Cursors can be used with graphical list with does need to screen all data in one time.
-	 *
-	 * This function does not returns ordered records.
+	 * <br>
+	 * This function does not return ordered records.
 	 *
 	 * @param whereCondition
 	 *            the sql equivalent where condition
@@ -2712,8 +2701,8 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * Cursors enable to parse query data randomly without loading data into memory.
 	 * Query data is however loaded into cache memory in order to get better performance.
 	 * Cursors can be used with graphical list with does need to screen all data in one time.
-	 *
-	 * This function does not returns ordered records.
+	 * <br>
+	 * This function does not return ordered records.
 	 *
 	 * @param whereCondition
 	 *            the sql equivalent where condition
@@ -2732,7 +2721,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * Cursors enable to parse query data randomly without loading data into memory.
 	 * Query data is however loaded into cache memory in order to get better performance.
 	 * Cursors can be used with graphical list with does need to screen all data in one time.
-	 *
+	 * <br>
 	 * This function returns ordered records.
 	 *
 	 * @param whereCondition
@@ -2760,7 +2749,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * Cursors enable to parse query data randomly without loading data into memory.
 	 * Query data is however loaded into cache memory in order to get better performance.
 	 * Cursors can be used with graphical list with does need to screen all data in one time.
-	 *
+	 * <br>
 	 * This function returns ordered records.
 	 *
 	 * @param ascendant
@@ -2784,7 +2773,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * Cursors enable to parse query data randomly without loading data into memory.
 	 * Query data is however loaded into cache memory in order to get better performance.
 	 * Cursors can be used with graphical list with does need to screen all data in one time.
-	 *
+	 * <br>
 	 * This function returns ordered records.
 	 *
 	 * @param cacheSize the data stored in cache during cursor parsing
@@ -2809,7 +2798,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * Cursors enable to parse query data randomly without loading data into memory.
 	 * Query data is however loaded into cache memory in order to get better performance.
 	 * Cursors can be used with graphical list with does need to screen all data in one time.
-	 *
+	 * <br>
 	 * This function returns ordered records.
 	 *
 	 * @param whereCondition
@@ -4521,7 +4510,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	/**
 	 * Returns true if there is at least one record which corresponds to one of the
-	 * given fields. One of the given fields must corresponds exactly one the
+	 * given fields. One of the given fields must correspond exactly one the
 	 * records.
 	 * 
 	 * @param _fields
@@ -4542,7 +4531,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 
 	/**
 	 * Returns true if there is at least one record which corresponds to one of the
-	 * given fields. One of the given fields must corresponds exactly one the
+	 * given fields. One of the given fields must correspond exactly one the
 	 * records.
 	 * 
 	 * @param _fields
@@ -4870,16 +4859,17 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	final long removeAllRecordsWithCascadeImpl(boolean synchronizeIfNecessary) throws DatabaseException {
 		String sqlQuery = "DELETE FROM "+getSqlTableName()+sql_connection.getSqlComma();
 		try {
-			PreparedStatement statement= sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().prepareStatement(sqlQuery, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
-			int res=statement.executeUpdate();
+			try(PreparedStatement statement= sql_connection.getConnectionAssociatedWithCurrentThread().getConnection().prepareStatement(sqlQuery, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE)) {
+				int res = statement.executeUpdate();
 
-			if (res!=0 && isLoadedInMemory()) {
-				memoryToRefreshWithCascade();
+				if (res != 0 && isLoadedInMemory()) {
+					memoryToRefreshWithCascade();
+				}
+				if (hasBackupManager || synchronizeIfNecessary)
+					getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
+							new TableEvent<>(-1, DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE, this, null, null, null), synchronizeIfNecessary);
+				return res;
 			}
-			if (hasBackupManager || synchronizeIfNecessary)
-				getDatabaseWrapper().getConnectionAssociatedWithCurrentThread().addEvent(
-					new TableEvent<>(-1, DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE, this, null, null, null), synchronizeIfNecessary);
-			return res;
 
 		} catch (SQLException e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -6159,7 +6149,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws FieldDatabaseException
 	 * 	               if all primary keys have not been given, or if fields which are
 	 * 	               not primary keys were given.
-	 * @throws NullPointerException if some of keys are null
+	 * @throws NullPointerException if one of the keys are null
 	 */
 	public final boolean removeRecord(final Map<String, Object> keys) throws DatabaseException {
 		checkFields(keys);
@@ -6197,7 +6187,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws FieldDatabaseException
 	 * 	               if all primary keys have not been given, or if fields which are
 	 * 	               not primary keys were given.
-	 * @throws NullPointerException if some of keys are null
+	 * @throws NullPointerException if one of the keys are null
 	 */
 	public final boolean removeRecordWithCascade(final Map<String, Object> keys) throws DatabaseException {
 		checkFields(keys);
@@ -6319,7 +6309,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             if parameters are null pointers.
 	 * @throws RecordNotFoundDatabaseException
 	 *             is the given record was not found into the database. This can
-	 *             occurs if the record has already been deleted.
+	 *             occur if the record has already been deleted.
 	 */
 	public final void removeRecordWithCascade(final T _record) throws DatabaseException {
 		removeUntypedRecordWithCascade(_record, true);
@@ -6502,7 +6492,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             a foreign key of another table.
 	 * @throws RecordNotFoundDatabaseException
 	 *             if one of the given records has not been found into the database.
-	 *             This may occurs if the record has already been deleted into the
+	 *             This may occur if the record has already been deleted into the
 	 *             database.
 	 */
 	public final void removeRecords(final Collection<T> _records) throws DatabaseException {
@@ -6592,7 +6582,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
 	 * @throws RecordNotFoundDatabaseException
-	 *             if one of the given records was not found found into the
+	 *             if one of the given records was not found into the
 	 *             database. This may occur if the concerned record has already been
 	 *             deleted.
 	 */
@@ -6912,7 +6902,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             field which has the unique property exists already into the
 	 *             table.
 	 * @throws FieldDatabaseException
-	 *             if one of the given fields does not exists into the database, or
+	 *             if one of the given fields does not exist into the database, or
 	 *             if fields are lacking.
 	 * @throws RecordNotFoundDatabaseException
 	 *             if one of the field is a foreign key and point to a record of
@@ -6939,7 +6929,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             field which has the unique property exists already into the
 	 *             table.
 	 * @throws FieldDatabaseException
-	 *             if one of the given fields does not exists into the database, or
+	 *             if one of the given fields does not exist into the database, or
 	 *             if fields are lacking.
 	 * @throws RecordNotFoundDatabaseException
 	 *             if one of the field is a foreign key and point to a record of
@@ -6974,7 +6964,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             field which has the unique property exists already into the
 	 *             table.
 	 * @throws FieldDatabaseException
-	 *             if one of the given fields does not exists into the database, or
+	 *             if one of the given fields does not exist into the database, or
 	 *             if fields are lacking.
 	 * @throws RecordNotFoundDatabaseException
 	 *             if one of the field is a foreign key and point to a record of
@@ -7345,7 +7335,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             field which has the unique property exists already into the
 	 *             table.
 	 * @throws FieldDatabaseException
-	 *             if one of the given fields does not exists into the database, or
+	 *             if one of the given fields does not exist into the database, or
 	 *             if fields are lacking.
 	 * @throws RecordNotFoundDatabaseException
 	 *             if one of the field is a foreign key and point to a record of
@@ -7374,7 +7364,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             field which has the unique property exists already into the
 	 *             table.
 	 * @throws FieldDatabaseException
-	 *             if one of the given fields does not exists into the database, or
+	 *             if one of the given fields does not exist into the database, or
 	 *             if fields are lacking.
 	 * @throws RecordNotFoundDatabaseException
 	 *             if one of the field is a foreign key and point to a record of
@@ -7398,7 +7388,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	/**
 	 * Alter a record into the database. The string type in the Map corresponds to
 	 * the name of the field, and the Object type field corresponds the value of the
-	 * field. Internal record field must altered before calling this function. It is
+	 * field. Internal record field must be altered before calling this function. It is
 	 * not possible to alter primary keys with this function. Please call instead
 	 * {@link #updateRecord(DatabaseRecord, Map)} or
 	 * {@link #updateRecord(DatabaseRecord, Object[])}
@@ -7416,7 +7406,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             through foreign keys into other tables, which are also primary
 	 *             keys.
 	 * @throws FieldDatabaseException
-	 *             if one of the given fields does not exists into the database, or
+	 *             if one of the given fields does not exist into the database, or
 	 *             if one of the given fields are auto or random primary keys.
 	 * @throws RecordNotFoundDatabaseException
 	 *             if the given record is not included into the database, or if one
@@ -7442,7 +7432,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * the Object type field corresponds the value of the field. If primary keys are
 	 * altered, every foreign key pointing to this record will be transparently
 	 * altered. However, if records pointing to this altered record remain in
-	 * memory, they will no be altered if the current table has not the annotation
+	 * memory, they will not be altered if the current table has not the annotation
 	 * {#link LoadToMemory}. The only solution in this case
 	 * is to reload the concerned records through the functions starting with
 	 * "getRecord".
@@ -7463,7 +7453,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             through foreign keys into other tables, which are also primary
 	 *             keys.
 	 * @throws FieldDatabaseException
-	 *             if one of the given fields does not exists into the database, or
+	 *             if one of the given fields does not exist into the database, or
 	 *             if one of the given fields are auto or random primary keys.
 	 * @throws RecordNotFoundDatabaseException
 	 *             if the given record is not included into the database, or if one
@@ -7489,7 +7479,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * the Object type field corresponds the value of the field. If primary keys are
 	 * altered, every foreign key pointing to this record will be transparently
 	 * altered. However, if records pointing to this altered record remain in
-	 * memory, they will no be altered if the current table has not the annotation
+	 * memory, they will not be altered if the current table has not the annotation
 	 * {#link LoadToMemory}. The only solution in this case
 	 * is to reload the concerned records through the functions starting with
 	 * "getRecord".
@@ -7509,7 +7499,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             through foreign keys into other tables, which are also primary
 	 *             keys.
 	 * @throws FieldDatabaseException
-	 *             if one of the given fields does not exists into the database, or
+	 *             if one of the given fields does not exist into the database, or
 	 *             if one of the given fields are auto or random primary keys.
 	 * @throws RecordNotFoundDatabaseException
 	 *             if the given record is not included into the database, or if one
@@ -7698,11 +7688,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	/**
 	 * Alter records into the database through a given inherited
 	 * {@link com.distrimind.ood.database.AlterRecordFilter} class.
-	 * 
+	 * <br>
 	 * The function parse all records present into this table. For each of them, it
 	 * calls the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}.
-	 * 
+	 * <br>
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#update(Map)} is called
 	 * into the inherited function
@@ -7714,13 +7704,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * will not be altered. Note that modification of primary keys and unique keys
 	 * are not permitted with this function. To do that, please use the function
 	 * {@link #updateRecord(DatabaseRecord, Map)}.
-	 * 
+	 * <br>
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#remove()} is called,
 	 * then the current record will be deleted after the end of the
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}
 	 * function call, only if no record point to this record.
-	 * 
+	 * <br>
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#removeWithCascade()} is
 	 * called, then the current record will be deleted after the end of the
@@ -7738,7 +7728,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             given fields is a null pointer whereas this field must be not
 	 *             null.
 	 * @throws FieldDatabaseException
-	 *             if one of the given fields to change does not exists into the
+	 *             if one of the given fields to change does not exist into the
 	 *             database, or if one of the given fields to change is a primary
 	 *             key or a unique field.
 	 * @throws RecordNotFoundDatabaseException
@@ -7753,11 +7743,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	/**
 	 * Alter records into the database through a given inherited
 	 * {@link com.distrimind.ood.database.AlterRecordFilter} class.
-	 * 
+	 * <br>
 	 * The function parse all records present into this table, that verify the given
 	 * WHERE condition. For each of them, it calls the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}.
-	 * 
+	 * <br>
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#update(Map)} is called
 	 * into the inherited function
@@ -7769,13 +7759,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * will not be altered. Note that modification of primary keys and unique keys
 	 * are not permitted with this function. To do that, please use the function
 	 * {@link #updateRecord(DatabaseRecord, Map)}.
-	 * 
+	 * <br>
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#remove()} is called,
 	 * then the current record will be deleted after the end of the
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}
 	 * function call, only if no record point to this record.
-	 * 
+	 * <br>
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#removeWithCascade()} is
 	 * called, then the current record will be deleted after the end of the
@@ -7797,7 +7787,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             given fields is a null pointer whereas this field must be not
 	 *             null.
 	 * @throws FieldDatabaseException
-	 *             if one of the given fields to change does not exists into the
+	 *             if one of the given fields to change does not exist into the
 	 *             database, or if one of the given fields to change is a primary
 	 *             key or a unique field.
 	 * @throws RecordNotFoundDatabaseException
@@ -7828,11 +7818,11 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	/**
 	 * Alter records into the database through a given inherited
 	 * {@link com.distrimind.ood.database.AlterRecordFilter} class.
-	 * 
+	 * <br>
 	 * The function parse all records present into this table, that verify the given
 	 * WHERE condition. For each of them, it calls the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}.
-	 * 
+	 * <br>
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#update(Map)} is called
 	 * into the inherited function
@@ -7844,13 +7834,13 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 * will not be altered. Note that modification of primary keys and unique keys
 	 * are not permitted with this function. To do that, please use the function
 	 * {@link #updateRecord(DatabaseRecord, Map)}.
-	 * 
+	 * <br>
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#remove()} is called,
 	 * then the current record will be deleted after the end of the
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#nextRecord(Object)}
 	 * function call, only if no record point to this record.
-	 * 
+	 * <br>
 	 * If the function
 	 * {@link com.distrimind.ood.database.AlterRecordFilter#removeWithCascade()} is
 	 * called, then the current record will be deleted after the end of the
@@ -7872,7 +7862,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	 *             given fields is a null pointer whereas this field must be not
 	 *             null.
 	 * @throws FieldDatabaseException
-	 *             if one of the given fields to change does not exists into the
+	 *             if one of the given fields to change does not exist into the
 	 *             database, or if one of the given fields to change is a primary
 	 *             key or a unique field.
 	 * @throws RecordNotFoundDatabaseException
@@ -8255,6 +8245,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 
 	static class WriteLock extends Lock {
+		private final List<Lock> derivedLocks=new ArrayList<>();
 		WriteLock(Table<?> _current_table) throws DatabaseException {
 			this(_current_table, new ArrayList<>(20), _current_table);
 		}
@@ -8276,14 +8267,14 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					for (NeighboringTable nt : actual_table.list_tables_pointing_to_this_table) {
 						Table<?> t = nt.getPointingTable();
 						if (!_comes_from_tables.contains(t)) {
-							new WriteLock(t, _comes_from_tables, _from_comes_original_table);
+							derivedLocks.add(new WriteLock(t, _comes_from_tables, _from_comes_original_table));
 						}
 					}
 					for (ForeignKeyFieldAccessor fa : actual_table.foreign_keys_fields) {
 						Table<?> t = fa.getPointedTable();
 						if (_comes_from_tables.size() == 1 || (!_comes_from_tables.contains(t)
 								&& !Lock.indirectlyPointTo(t, _from_comes_original_table))) {
-							new ReadLock(t, _comes_from_tables);
+							derivedLocks.add(new ReadLock(t, _comes_from_tables));
 						}
 					}
 					putLock(actual_table, this);
@@ -8321,7 +8312,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					removeActualLock(actual_table, previous_lock);
 					// current_table.current_lock=previous_lock;
 					_comes_from_tables.add(actual_table);
-					for (NeighboringTable nt : actual_table.list_tables_pointing_to_this_table) {
+					for (Lock l : derivedLocks)
+						l.close(_comes_from_tables);
+					derivedLocks.clear();
+					/*for (NeighboringTable nt : actual_table.list_tables_pointing_to_this_table) {
 						Table<?> t = nt.getPointingTable();
 						if (!_comes_from_tables.contains(t))
                             Objects.requireNonNull(getActualLock(t)).close(_comes_from_tables);
@@ -8331,7 +8325,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 						if (!_comes_from_tables.contains(t)) {
                             Objects.requireNonNull(getActualLock(t)).close(_comes_from_tables);
                         }
-					}
+					}*/
 				} finally {
 					actual_table.unlockIfNecessary(true);
 				}
@@ -8340,6 +8334,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	}
 
 	private static class ReadLock extends Lock {
+		private final List<Lock> derivedLocks=new ArrayList<>();
 		public ReadLock(Table<?> _current_table) throws DatabaseException {
 			this(_current_table, new ArrayList<>(20));
 		}
@@ -8365,7 +8360,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					for (ForeignKeyFieldAccessor fa : actual_table.foreign_keys_fields) {
 						Table<?> t = fa.getPointedTable();
 						if (!_comes_from_tables.contains(t))
-							new ReadLock(t, _comes_from_tables);
+							derivedLocks.add(new ReadLock(t, _comes_from_tables));
 					}
 					putLock(actual_table, this);
 
@@ -8406,12 +8401,15 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 					 * { Table<?> t=nt.getPointedTable(); if (!_comes_from_tables.contains(t))
 					 * t.current_lock.close(_comes_from_tables); }
 					 */
-					for (ForeignKeyFieldAccessor fa : actual_table.foreign_keys_fields) {
+					for (Lock l : derivedLocks)
+						l.close(_comes_from_tables);
+					derivedLocks.clear();
+					/*for (ForeignKeyFieldAccessor fa : actual_table.foreign_keys_fields) {
 						Table<?> t = fa.getPointedTable();
 						if (!_comes_from_tables.contains(t)) {
                             Objects.requireNonNull(getActualLock(t)).close(_comes_from_tables);
                         }
-					}
+					}*/
 				} finally {
 					actual_table.unlockIfNecessary(false);
 				}

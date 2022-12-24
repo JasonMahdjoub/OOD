@@ -17,4 +17,4 @@ include 'services:webservice'
 
 rootProject.name = 'OOD'
 /*include ':Utils'
-project(":Utils").projectDir = file("../../Utils/Utils")*/
+project(":Utils").projectDir = file("../Utils")*/
