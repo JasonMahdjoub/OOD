@@ -1,6 +1,6 @@
 
 /*
-Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
+Copyright or © or Corp. Jason Mahdjoub (01/04/2013)
 
 jason.mahdjoub@distri-mind.fr
 
@@ -64,6 +64,11 @@ public class OOD {
 				VERSION.loadBuildNumber(is);
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
+					.addDescription(
+							new Description(3, 2, 1, Version.Type.STABLE, 0, "2022-12-23")
+									.addItem(INTERNAL_CHANGE, "Fix spelling errors")
+									.addItem(INTERNAL_CHANGE, "Update Utils to 5.24.1")
+					)
 					.addDescription(
 							new Description(3, 2, 0, Version.Type.STABLE, 0, "2022-12-08")
 									.addItem(INTERNAL_CHANGE, "Target java compatibility is set to Java 11 but source code still use Java 8")

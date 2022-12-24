@@ -1,5 +1,5 @@
 /*
-Copyright or © or Copr. Jason Mahdjoub (01/04/2013)
+Copyright or © or Corp. Jason Mahdjoub (01/04/2013)
 
 jason.mahdjoub@distri-mind.fr
 
