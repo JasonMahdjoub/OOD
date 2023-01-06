@@ -65,8 +65,9 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
-							new Description(3, 2, 2, Version.Type.STABLE, 0, "2023-01-03")
+							new Description(3, 2, 2, Version.Type.STABLE, 0, "2023-01-06")
 									.addItem(INTERNAL_CHANGE, "Update Java language level to Java 11")
+									.addItem(INTERNAL_CHANGE, "Update Utils to 5.25.0 STABLE")
 					)
 					.addDescription(
 							new Description(3, 2, 1, Version.Type.STABLE, 0, "2022-12-23")
