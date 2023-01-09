@@ -106,12 +106,13 @@ public class EncryptedDatabaseBackupMetaDataPerFile implements SecureExternaliza
 
 	private byte[] getAssociatedData() throws IOException {
 		if (associatedData==null){
-			RandomByteArrayOutputStream out=new RandomByteArrayOutputStream();
-			out.writeLong(this.fileTimestampUTC);
-			out.writeLong(this.lastTransactionTimestampUTC);
-			out.writeString(this.packageString, false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
-			out.flush();
-			associatedData=out.getBytes();
+			try(RandomByteArrayOutputStream out=new RandomByteArrayOutputStream()) {
+				out.writeLong(this.fileTimestampUTC);
+				out.writeLong(this.lastTransactionTimestampUTC);
+				out.writeString(this.packageString, false, Table.MAX_DATABASE_PACKAGE_NAME_LENGTH);
+				out.flush();
+				associatedData = out.getBytes();
+			}
 		}
 		return associatedData;
 	}

@@ -46,9 +46,9 @@ import com.distrimind.util.io.SecureExternalizable;
  * @since OOD 3.0.0
  */
 public interface P2PDatabaseEventToSend extends DatabaseEventToSend, SecureExternalizable {
-	DecentralizedValue getHostDestination() throws DatabaseException;
+	DecentralizedValue getHostDestination() ;
 
-	DecentralizedValue getHostSource() throws DatabaseException;
+	DecentralizedValue getHostSource() ;
 
 
 

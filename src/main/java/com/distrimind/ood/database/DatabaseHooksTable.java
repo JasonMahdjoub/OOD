@@ -68,7 +68,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	private volatile DatabaseDistantTransactionEvent databaseDistantTransactionEvent = null;
 	private volatile IDTable idTable = null;
 	private volatile HashSet<String> supportedDatabasePackages = null;
-	protected volatile DatabaseHooksTable.Record localHost = null;
+	volatile DatabaseHooksTable.Record localHost = null;
 	private final HashMap<HostPair, Long> lastTransactionFieldsBetweenDistantHosts = new HashMap<>();
 
 	public enum PairingState
@@ -427,7 +427,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 
 	Record authenticatedMessageSent(AuthenticatedP2PMessage message) throws DatabaseException {
-		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Record>() {
+		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public Record run() throws Exception {
 				List<Record> l = getRecordsWithAllFields("hostID", message.getHostDestination());
@@ -469,14 +469,14 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 			throws DatabaseException {
 
 		final ArrayList<DatabaseHooksTable.Record> toUpdate = new ArrayList<>();
-		getRecords(new Filter<Record>() {
+		getRecords(new Filter<>() {
 
 			@Override
 			public boolean nextRecord(final com.distrimind.ood.database.DatabaseHooksTable.Record h)
 					throws DatabaseException {
 				final AtomicLong actualLastID = new AtomicLong(Long.MAX_VALUE);
 				getDatabaseTransactionsPerHostTable()
-						.getRecords(new Filter<DatabaseTransactionsPerHostTable.Record>() {
+						.getRecords(new Filter<>() {
 
 							@Override
 							public boolean nextRecord(DatabaseTransactionsPerHostTable.Record _record) {
@@ -491,7 +491,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						}, "hook=%hook", "hook", h);
 				if (actualLastID.get() > h.getLastValidatedLocalTransactionID()) {
 					getDatabaseDistantTransactionEvent()
-							.getRecords(new Filter<com.distrimind.ood.database.DatabaseDistantTransactionEvent.Record>() {
+							.getRecords(new Filter<>() {
 
 											@Override
 											public boolean nextRecord(
@@ -546,13 +546,13 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	Map<DecentralizedValue, Long> getLastValidatedLocalTransactionIDs() throws DatabaseException {
 		return getDatabaseWrapper()
-				.runSynchronizedTransaction(new SynchronizedTransaction<Map<DecentralizedValue, Long>>() {
+				.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 
 					@Override
 					public Map<DecentralizedValue, Long> run() throws Exception {
 						final Map<DecentralizedValue, Long> res = new HashMap<>();
 
-						getRecords(new Filter<Record>() {
+						getRecords(new Filter<>() {
 
 							@Override
 							public boolean nextRecord(Record _record) {
@@ -582,7 +582,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				});
 	}
 
-	protected DatabaseHooksTable() throws DatabaseException {
+	DatabaseHooksTable() throws DatabaseException {
 		super();
 	}
 
@@ -654,7 +654,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 						Set<DecentralizedValue> peerInCloudRemaining=new HashSet<>(peersInCloud);
 						if (getLocalDatabaseHost()==null)
 							throw new DatabaseException("Local database host not set");
-						List<Record> records=getRecords(new Filter<Record>() {
+						List<Record> records=getRecords(new Filter<>() {
 							@Override
 							public boolean nextRecord(Record r) {
 								return peerInCloudRemaining.remove(r.getHostID()) || r.concernsDatabaseHost;
@@ -839,7 +839,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 		if (hostID == null)
 			throw new NullPointerException("hostID");
 		return getDatabaseWrapper()
-				.runSynchronizedTransaction(new SynchronizedTransaction<Record>() {
+				.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 
 					@Override
 					public Record run() throws Exception {
@@ -907,12 +907,12 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 
 	private HashSet<String> generateSupportedPackages() throws DatabaseException {
 
-		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<HashSet<String>>() {
+		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
 
 			@Override
 			public HashSet<String> run() throws Exception {
 				final HashSet<String> databasePackages = new HashSet<>();
-				getRecords(new Filter<Record>() {
+				getRecords(new Filter<>() {
 
 					@Override
 					public boolean nextRecord(DatabaseHooksTable.Record _record) {
@@ -955,7 +955,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	long getGlobalLastValidatedTransactionID() throws DatabaseException {
 		final AtomicLong min = new AtomicLong(Long.MAX_VALUE);
 
-		getRecords(new Filter<Record>() {
+		getRecords(new Filter<>() {
 
 			@Override
 			public boolean nextRecord(DatabaseHooksTable.Record _record) {
@@ -977,7 +977,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	DatabaseHooksTable.Record getLocalDatabaseHost() throws DatabaseException {
 		if (localHost == null) {
 			final Reference<DatabaseHooksTable.Record> res = new Reference<>();
-			getRecords(new Filter<Record>() {
+			getRecords(new Filter<>() {
 
 				@Override
 				public boolean nextRecord(DatabaseHooksTable.Record _record) {
@@ -1025,7 +1025,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 	void setDatabasePackageNamesThatUseBackup(DecentralizedValue hostSource, Set<String> databasePackageNamesThatUseBackup) throws DatabaseException {
 		if (hostSource==null)
 			throw new NullPointerException();
-		updateRecords(new AlterRecordFilter<Record>() {
+		updateRecords(new AlterRecordFilter<>() {
 			@Override
 			public void nextRecord(Record _record) throws DatabaseException {
 				Set<String> hs = new HashSet<>(databasePackageNamesThatUseBackup);

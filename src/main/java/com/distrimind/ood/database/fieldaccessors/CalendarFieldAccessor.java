@@ -282,7 +282,7 @@ public class CalendarFieldAccessor extends FieldAccessor{
 	}
 
 	@Override
-	public Object autoGenerateValue(AbstractSecureRandom _random) throws DatabaseException {
+	public Object autoGenerateValue(AbstractSecureRandom _random)  {
 		throw new IllegalAccessError();
 	}
 

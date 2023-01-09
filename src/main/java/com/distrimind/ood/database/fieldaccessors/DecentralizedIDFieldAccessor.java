@@ -110,22 +110,6 @@ public class DecentralizedIDFieldAccessor extends FieldAccessor {
 		}
 	}
 
-	/*@Override
-	protected boolean equals(Object _field_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			DecentralizedIDGenerator val1 = null;
-			if (_field_instance instanceof DecentralizedIDGenerator)
-				val1 = (DecentralizedIDGenerator) _field_instance;
-			
-			Long ts = (Long)_result_set.getObject(_sft.translateField(sql_fields[0]));
-			Long wsseq = (Long)_result_set.getObject(_sft.translateField(sql_fields[1]));
-
-			return (val1 != null && val1.getTimeStamp() == ts && val1.getWorkerIDAndSequence() == wsseq) || (val1==null && ts==null && wsseq==null);
-		} catch (SQLException e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public Object getValue(Object _class_instance) throws DatabaseException {
@@ -224,46 +208,6 @@ public class DecentralizedIDFieldAccessor extends FieldAccessor {
 
 	}
 
-	/*@Override
-	public void updateValue(Object _class_instance, Object _field_instance, ResultSet _result_set)
-			throws DatabaseException {
-		setValue(_class_instance, _field_instance);
-		try {
-			DecentralizedIDGenerator did = (DecentralizedIDGenerator) field.get(_class_instance);
-			if (did==null)
-			{
-				_result_set.updateObject(sql_fields[0].short_field_without_quote, null);
-				_result_set.updateObject(sql_fields[1].short_field_without_quote, null);
-			}
-			else
-			{
-				_result_set.updateObject(sql_fields[0].short_field_without_quote, did.getTimeStamp());
-				_result_set.updateObject(sql_fields[1].short_field_without_quote, did.getWorkerIDAndSequence());
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}
-
-	@Override
-	protected void updateResultSetValue(Object _class_instance, ResultSet _result_set, SqlFieldTranslation _sft)
-			throws DatabaseException {
-		try {
-			DecentralizedIDGenerator did = (DecentralizedIDGenerator) field.get(_class_instance);
-			if (did==null)
-			{
-				_result_set.updateObject(_sft.translateField(sql_fields[0]), null);
-				_result_set.updateObject(_sft.translateField(sql_fields[1]), null);
-			}
-			else
-			{
-				_result_set.updateObject(_sft.translateField(sql_fields[0]), did.getTimeStamp());
-				_result_set.updateObject(_sft.translateField(sql_fields[1]), did.getWorkerIDAndSequence());
-			}
-		} catch (Exception e) {
-			throw DatabaseException.getDatabaseException(e);
-		}
-	}*/
 
 	@Override
 	public boolean canBePrimaryOrUniqueKey() {

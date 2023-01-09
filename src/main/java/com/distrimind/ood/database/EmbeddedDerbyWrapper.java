@@ -615,10 +615,6 @@ class EmbeddedDerbyWrapper extends DatabaseWrapper {
 		}
 		return limit.toString();
 	}
-	/*@Override
-	protected String getSqlQuerryToGetLastGeneratedID() {
-		return "values IDENTITY_VAL_LOCAL()";
-	}*/
 
 	@Override
 	protected String getOnUpdateCascadeSqlQuery() {

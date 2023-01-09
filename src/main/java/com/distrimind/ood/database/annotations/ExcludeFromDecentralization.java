@@ -43,7 +43,7 @@ import java.lang.annotation.Target;
 /**
  * This annotation enables to exclude this table from 
  * the decentralized process of database synchronization between peers. 
- * 
+ * <br>
  * Tables in relation with this table through foreign keys are also excluded.
  * 
  * @author Jason Mahdjoub

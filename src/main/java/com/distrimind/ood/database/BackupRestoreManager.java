@@ -888,17 +888,16 @@ public class BackupRestoreManager {
 								final Table<?> table = databaseWrapper.getTableInstance(c);
 
 
-								globalNumberOfSavedRecords.set(databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
+								globalNumberOfSavedRecords.set(databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 									long originalPosition = rout.get().currentPosition();
-									long numberOfSavedRecords=globalNumberOfSavedRecords.get();
-									long startPosition=0;
+									long numberOfSavedRecords = globalNumberOfSavedRecords.get();
+									long startPosition = 0;
 									RandomOutputStream out = rout.get();
 
 									@Override
 									public Long run() throws Exception {
 
-										table.getPaginatedRecordsWithUnknownType(startPosition==0?-1:startPosition, startPosition==0?-1:Long.MAX_VALUE, new Filter<DatabaseRecord>() {
-
+										table.getPaginatedRecordsWithUnknownType(startPosition == 0 ? -1 : startPosition, startPosition == 0 ? -1 : Long.MAX_VALUE, new Filter<>() {
 
 
 											@Override
@@ -910,7 +909,7 @@ public class BackupRestoreManager {
 													if (progressMonitor != null) {
 
 														++numberOfSavedRecords;
-														progressMonitor.setProgress((int) (((numberOfSavedRecords+1) * 1000) / totalRecords));
+														progressMonitor.setProgress((int) (((numberOfSavedRecords + 1) * 1000) / totalRecords));
 													}
 
 													if (out.currentPosition() >= backupConfiguration.getMaxBackupFileSizeInBytes()) {
@@ -1439,33 +1438,28 @@ public class BackupRestoreManager {
 			final Long lastTransactionID=synchronizationPlanMessageComingFromCentralDatabaseBackup==null?null:getLastTransactionID();
 			if (lastTransactionID!=null)
 			{
-				databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Object>() {
+				databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 					@Override
 					public Object run() throws Exception {
-						final long lastLocalTID=databaseWrapper.getTransactionIDTable().getLastTransactionID()-1;
-						DatabaseHooksTable dht=databaseWrapper.getDatabaseHooksTable();
-
-
+						final long lastLocalTID = databaseWrapper.getTransactionIDTable().getLastTransactionID() - 1;
+						DatabaseHooksTable dht = databaseWrapper.getDatabaseHooksTable();
 
 
 						//Map<DecentralizedValue, LastValidatedLocalAndDistantID> lastValidatedIDsPerHost=synchronizationPlanMessageComingFromCentralDatabaseBackup.getLastValidatedIDsPerHost(databaseWrapper.getDatabaseConfigurationsBuilder().getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup());
-						Map<DecentralizedValue, Long> lastValidatedIDsPerHost=synchronizationPlanMessageComingFromCentralDatabaseBackup.getLastValidatedIDsPerHost(databaseWrapper.getDatabaseConfigurationsBuilder().getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup());
-						dht.updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+						Map<DecentralizedValue, Long> lastValidatedIDsPerHost = synchronizationPlanMessageComingFromCentralDatabaseBackup.getLastValidatedIDsPerHost(databaseWrapper.getDatabaseConfigurationsBuilder().getEncryptionProfileProviderForE2EDataDestinedCentralDatabaseBackup());
+						dht.updateRecords(new AlterRecordFilter<>() {
 							@Override
 							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
-								if ((_record.getLastValidatedLocalTransactionID()==lastLocalTID || _record.getLastValidatedLocalTransactionID()==-1) && lastLocalTID<lastTransactionID)
-								{
+								if ((_record.getLastValidatedLocalTransactionID() == lastLocalTID || _record.getLastValidatedLocalTransactionID() == -1) && lastLocalTID < lastTransactionID) {
 									update("lastValidatedLocalTransactionID", lastTransactionID);
 								}
-								if (_record.getHostID().equals(synchronizationPlanMessageComingFromCentralDatabaseBackup.getSourceChannel()))
-								{
+								if (_record.getHostID().equals(synchronizationPlanMessageComingFromCentralDatabaseBackup.getSourceChannel())) {
 									if (_record.getLastValidatedDistantTransactionID() == -1) {
 										update("lastValidatedDistantTransactionID", lastTransactionID);
 									}
-								}
-								else {
+								} else {
 									Long lastValidatedDistantId = lastValidatedIDsPerHost.get(_record.getHostID());
-									if (lastValidatedDistantId!=null && _record.getLastValidatedDistantTransactionID() == -1) {
+									if (lastValidatedDistantId != null && _record.getLastValidatedDistantTransactionID() == -1) {
 										update("lastValidatedDistantTransactionID", lastValidatedDistantId);
 									}
 								}
@@ -1628,27 +1622,25 @@ public class BackupRestoreManager {
 
 							final long dataTransactionStartPosition=in.currentPosition();
 							final long pp=progressPosition;
-							progressPosition=databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
-								long progressPosition=pp;
+							progressPosition=databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
+								long progressPosition = pp;
+
 								@Override
 								public Long run() throws Exception {
-									if (addResetDB.get())
-									{
+									if (addResetDB.get()) {
 										addResetDB.set(false);
 
-										for (int i=tables.size()-1;i>=0;i--)
-										{
-											Table<?> t=tables.get(i);
+										for (int i = tables.size() - 1; i >= 0; i--) {
+											Table<?> t = tables.get(i);
 											try (Table.Lock ignored = new Table.WriteLock(t)) {
 												t.removeAllRecordsWithCascadeImpl(true);
-											}
-											catch (Exception e) {
+											} catch (Exception e) {
 												throw DatabaseException.getDatabaseException(e);
 											}
 
 										}
 									}
-									for(;;) {
+									for (; ; ) {
 
 										int startRecord = (int) in.currentPosition();
 										byte eventTypeCode = in.readByte();
@@ -1662,34 +1654,32 @@ public class BackupRestoreManager {
 											throw new IOException();
 										Table<?> table = tables.get(tableIndex);
 										//Table<?> oldTable = oldTables.get(tableIndex);
-										if (eventType==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
-										{
+										if (eventType == DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE) {
 											table.removeAllRecordsWithCascade();
-										}
-										else {
-											int s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
-											
+										} else {
+											int s = in.readBytesArray(recordBuffer, 0, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
+
 											switch (eventType) {
 												case ADD: {
 													assert eventTypeCode == 2;
 													HashMap<String, Object> hm = new HashMap<>();
 													table.deserializeFields(hm, recordBuffer, 0, s, true, false, false);
-													HashMap<String, Object> hmpk=hm;
+													HashMap<String, Object> hmpk = hm;
 													if (in.readBoolean()) {
-														hmpk=new HashMap<>(hm);
-														s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
+														hmpk = new HashMap<>(hm);
+														s = in.readBytesArray(recordBuffer, 0, false, Table.MAX_PRIMARY_KEYS_SIZE_IN_BYTES);
 														table.deserializeFields(hm, recordBuffer, 0, s, false, true, false);
 													}
 
 													if (in.readBoolean()) {
-														if (hmpk==hm)
-															hmpk=new HashMap<>(hm);
-														s=in.readBytesArray(recordBuffer, 0, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
+														if (hmpk == hm)
+															hmpk = new HashMap<>(hm);
+														s = in.readBytesArray(recordBuffer, 0, false, Table.MAX_NON_KEYS_SIZE_IN_BYTES);
 														table.deserializeFields(hm, recordBuffer, 0, s, false, false, true);
 													}
 
 													try {
-														 table.addUntypedRecord(hm);
+														table.addUntypedRecord(hm);
 														//newRecord = table.addUntypedRecord(hm, drRecord == null, null);
 													} catch (ConstraintsNotRespectedDatabaseException ignored) {
 														//TODO this exception occurs sometimes but should not. See why.
@@ -1754,7 +1744,7 @@ public class BackupRestoreManager {
 											throw new IOException();
 										if (progressMonitor != null && totalSize != 0) {
 											progressPosition += in.currentPosition() - startRecord;
-											progressMonitor.setProgress((int) (((progressPosition+1) * 1000) / totalSize));
+											progressMonitor.setProgress((int) (((progressPosition + 1) * 1000) / totalSize));
 										}
 
 									}
@@ -1967,7 +1957,7 @@ public class BackupRestoreManager {
 		}
 
 		@Override
-		void backupRecordEvent(TableEvent<?> _de) throws DatabaseException {
+		void backupRecordEvent(TableEvent<?> _de)  {
 
 		}
 
@@ -1983,9 +1973,9 @@ public class BackupRestoreManager {
 	}
 	class Transaction extends AbstractTransaction
 	{
-		long lastTransactionUTC;
+		final long lastTransactionUTC;
 		int transactionsNumber=0;
-		RandomOutputStream out;
+		final RandomOutputStream out;
 		private boolean closed=false;
 		private long transactionUTC;
 		private final int nextTransactionReference;

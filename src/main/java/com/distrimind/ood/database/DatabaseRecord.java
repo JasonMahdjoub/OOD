@@ -51,7 +51,7 @@ package com.distrimind.ood.database;
  * {@link com.distrimind.ood.database.annotations.Unique},
  * {@link com.distrimind.ood.database.annotations.ForeignKey}). If no annotation
  * is given, the corresponding field will not be added into the database.
- * 
+ * <br>
  * Note that the native types are always NotNull. Fields which have the
  * annotation {@link com.distrimind.ood.database.annotations.AutoPrimaryKey}
  * must be 'int' or 'short' values. Fields which have the annotation
@@ -59,7 +59,7 @@ package com.distrimind.ood.database;
  * 'long' values. Fields which have the annotation
  * {@link com.distrimind.ood.database.annotations.ForeignKey} must be
  * DatabaseRecord instances.
- *
+ * <br>
  * Never alter a field directly throw a function of the child class. Do it with
  * the function
  * {@link com.distrimind.ood.database.Table#updateRecord(DatabaseRecord, java.util.Map)}.
@@ -70,7 +70,7 @@ package com.distrimind.ood.database;
  * {@link com.distrimind.ood.database.Table#addRecord(java.util.Map)}, or the
  * function
  * {@link com.distrimind.ood.database.Table#addRecords(java.util.Map...)}.
- * 
+ * <br>
  * The inner database fields do not need to be initialized. However, fields
  * which have no annotation (which are not included into the database) are not
  * concerned.

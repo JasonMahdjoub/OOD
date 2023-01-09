@@ -172,7 +172,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 
 				DatabaseTransactionsPerHostTable.this
-						.removeRecordsWithCascade(new Filter<com.distrimind.ood.database.DatabaseTransactionsPerHostTable.Record>() {
+						.removeRecordsWithCascade(new Filter<>() {
 
 							@Override
 							public boolean nextRecord(
@@ -214,7 +214,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 
 				DatabaseTransactionsPerHostTable.this
-						.removeRecords(new Filter<com.distrimind.ood.database.DatabaseTransactionsPerHostTable.Record>() {
+						.removeRecords(new Filter<>() {
 
 							@Override
 							public boolean nextRecord(
@@ -250,13 +250,13 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 		// if (hook.getLastValidatedTransaction()<lastID)
 		{
-			return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
+			return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
 
 				@Override
 				public Long run() throws Exception {
 					removeRecords("transaction.id<=%lastID AND hook=%hook", "lastID", lastID, "hook", hook);
 					final AtomicLong actualLastID = new AtomicLong(Long.MAX_VALUE);
-					getRecords(new Filter<Record>() {
+					getRecords(new Filter<>() {
 
 						@Override
 						public boolean nextRecord(Record _record) {
@@ -270,7 +270,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 					}, "hook=%hook", "hook", hook);
 					if (actualLastID.get() > lastID) {
 						getDatabaseDistantTransactionEvent()
-								.getRecords(new Filter<DatabaseDistantTransactionEvent.Record>() {
+								.getRecords(new Filter<>() {
 
 												@Override
 												public boolean nextRecord(
@@ -297,7 +297,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 
 					getDatabaseDistantTransactionEvent()
-							.updateRecords(new AlterRecordFilter<DatabaseDistantTransactionEvent.Record>() {
+							.updateRecords(new AlterRecordFilter<>() {
 
 								@Override
 								public void nextRecord(
@@ -348,7 +348,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		if (force)
 			return null;
 		final Reference<DecentralizedValue> collision = new Reference<>(null);
-		Filter<DatabaseDistantEventsTable.Record> filter= new Filter<com.distrimind.ood.database.DatabaseDistantEventsTable.Record>() {
+		Filter<DatabaseDistantEventsTable.Record> filter= new Filter<>() {
 
 			@Override
 			public boolean nextRecord(com.distrimind.ood.database.DatabaseDistantEventsTable.Record _record)
@@ -378,7 +378,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			throws DatabaseException {
 
 		final Reference<Boolean> collisionDetected = new Reference<>(false);
-		Filter<DatabaseEventsTable.Record> filter= new Filter<DatabaseEventsTable.Record>() {
+		Filter<DatabaseEventsTable.Record> filter= new Filter<>() {
 
 			@Override
 			public boolean nextRecord(com.distrimind.ood.database.DatabaseEventsTable.Record _record)
@@ -466,7 +466,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							if (transaction.isForced() || concernedHosts.size() > 0) {
 
 								final Set<DecentralizedValue> l = new HashSet<>();
-								Filter<com.distrimind.ood.database.DatabaseHooksTable.Record> f=new Filter<com.distrimind.ood.database.DatabaseHooksTable.Record>() {
+								Filter<com.distrimind.ood.database.DatabaseHooksTable.Record> f= new Filter<>() {
 
 									@Override
 									public boolean nextRecord(com.distrimind.ood.database.DatabaseHooksTable.Record _record) {
@@ -486,7 +486,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 						final DatabaseHooksTable.Record fromHook=_fromHook.get();
 
 						try {
-							transactionNotEmpty = getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+							transactionNotEmpty = getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
 
 								@Override
 								public Boolean run() throws Exception {
@@ -499,7 +499,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 											DatabaseEventsTable.AbstractRecord event = iterator.next();
 
 											Table<DatabaseRecord> t;
-											Long lastRestorationTimeUTCInMS=null;
+											Long lastRestorationTimeUTCInMS = null;
 											try {
 												t = (Table<DatabaseRecord>) getDatabaseWrapper().getTableInstance(event.getConcernedTable());
 												if (databasePackage.get() == null) {
@@ -514,9 +514,8 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 													throw new SerializationDatabaseException("indirectTransaction=" + indirectTransaction, e);
 
 											}
-											if (lastRestorationTimeUTCInMS!=null && lastRestorationTimeUTCInMS>=transaction.getTimeUTC())
-											{
-												validatedTransaction=false;
+											if (lastRestorationTimeUTCInMS != null && lastRestorationTimeUTCInMS >= transaction.getTimeUTC()) {
+												validatedTransaction = false;
 												obsoleteTransaction.set(true);
 											}
 											final DatabaseEventType type = DatabaseEventType.getEnum(event.getType());
@@ -1250,7 +1249,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 				if (number.get() >= maxEventsRecords)
 					return number.get();
 				do {
-					getOrderedRecords(new Filter<Record>() {
+					getOrderedRecords(new Filter<>() {
 
 										  @Override
 										  public boolean nextRecord(Record _record) throws DatabaseException {
@@ -1258,7 +1257,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 												  oos.writeByte(EXPORT_DIRECT_TRANSACTION);
 												  getDatabaseTransactionEventsTable().serialize(_record.getTransaction(), oos, true,
 														  false);
-												  getDatabaseEventsTable().getOrderedRecords(new Filter<com.distrimind.ood.database.DatabaseEventsTable.Record>() {
+												  getDatabaseEventsTable().getOrderedRecords(new Filter<>() {
 
 																								 @Override
 																								 public boolean nextRecord(

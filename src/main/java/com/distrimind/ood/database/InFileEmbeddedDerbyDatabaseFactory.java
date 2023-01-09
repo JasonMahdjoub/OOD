@@ -47,10 +47,7 @@ import java.io.File;
  * @since OOD 2.0.0
  */
 class InFileEmbeddedDerbyDatabaseFactory extends DatabaseFactory<EmbeddedDerbyWrapper> {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 5754965997489003893L;
+
 	private File directory;
 	private boolean alwaysDisconnectAfterOnTransaction=false;
 	protected InFileEmbeddedDerbyDatabaseFactory() throws DatabaseException {

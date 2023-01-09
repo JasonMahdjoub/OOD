@@ -59,7 +59,7 @@ public interface DatabaseAnomaliesNotifier<DR extends DatabaseRecord, T extends 
      * <li>the record to add already exists :
      * {@link DatabaseWrapper.SynchronizationAnomalyType#RECORD_TO_ADD_ALREADY_PRESENT}</li>
      * </ul>
-     * Anomalies differs with collision (see
+     * Anomalies differ with collision (see
      * {@link DatabaseCollisionsNotifier#collisionDetected(DecentralizedValue, DecentralizedValue, DatabaseEventType, Table, HashMap, DatabaseRecord, DatabaseRecord)}).
      * They should not occur and represents a synchronization failure. Whereas
      * collisions are produced when users make modifications on the same data into

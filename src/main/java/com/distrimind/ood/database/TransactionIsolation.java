@@ -93,13 +93,13 @@ public enum TransactionIsolation {
 		return code;
 	}
 
-	@SuppressWarnings("ConstantConditions")
 	public TransactionIsolation getNext() {
 		int num = ordinal() + 1;
 		TransactionIsolation[] res = TransactionIsolation.values();
 		if (res.length >= num)
 			return null;
 		else
+			//noinspection DataFlowIssue
 			return res[num];
 	}
 

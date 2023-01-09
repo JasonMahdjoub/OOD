@@ -47,8 +47,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -113,17 +111,15 @@ public class ForeignKeyFieldAccessor extends FieldAccessor {
 			@SuppressWarnings("unchecked")
 			Class<? extends DatabaseRecord> c = (Class<? extends DatabaseRecord>) field.getType();
 			try {
-				Method f=AccessController.doPrivileged((PrivilegedAction<Method>) () -> {
-					Method f1;
-					try {
-						f1 = DatabaseWrapper.class.getDeclaredMethod("getTableInstance", Class.class, int.class);
-					} catch (NoSuchMethodException e) {
-						e.printStackTrace();
-						return null;
-					}
-					f1.setAccessible(true);
-					return f1;
-				});
+				Method f;
+				try {
+					f = DatabaseWrapper.class.getDeclaredMethod("getTableInstance", Class.class, int.class);
+					f.setAccessible(true);
+				} catch (NoSuchMethodException e) {
+					e.printStackTrace();
+
+					throw DatabaseException.getDatabaseException(e);
+				}
 				pointed_table = (Table<?>)f.invoke(sql_connection, Table.getTableClass(c), tableVersion);
 			} catch (IllegalAccessException | InvocationTargetException | NullPointerException e) {
 				throw DatabaseException.getDatabaseException(e);

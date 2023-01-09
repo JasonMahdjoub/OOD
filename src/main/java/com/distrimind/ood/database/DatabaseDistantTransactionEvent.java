@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -60,7 +59,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 	private static final int MAX_SIZE_IN_BYTES_FOR_INFORMED_PEERS =Short.MAX_VALUE;//DatabaseWrapper.MAX_DISTANT_PEERS*DecentralizedValue.MAX_SIZE_IN_BYTES_OF_DECENTRALIZED_VALUE;
 	private volatile DatabaseDistantEventsTable databaseDistantEventsTable = null;
 
-	protected DatabaseDistantTransactionEvent() throws DatabaseException {
+	DatabaseDistantTransactionEvent() throws DatabaseException {
 		super();
 	}
 
@@ -79,7 +78,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 		@Field
 		protected boolean peersInformedFull = false;
 
-		public Record() {
+		Record() {
 
 		}
 
@@ -203,7 +202,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 	}
 
 	void cleanDistantTransactions() throws DatabaseException {
-		removeRecordsWithCascade(new Filter<DatabaseDistantTransactionEvent.Record>() {
+		removeRecordsWithCascade(new Filter<>() {
 
 			@Override
 			public boolean nextRecord(Record _record) throws DatabaseException {
@@ -264,55 +263,55 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 		nearNextLocalID.set(Long.MAX_VALUE);
 		final Reference<Integer> number = new Reference<>(0);
 		try {
-			getOrderedRecords(new Filter<DatabaseDistantTransactionEvent.Record>() {
+			getOrderedRecords(new Filter<>() {
 
-				@Override
-				public boolean nextRecord(Record _record) throws DatabaseException {
-					try {
-						if (_record.getLocalID() > fromTransactionID) {
-							if (_record.getLocalID() < nearNextLocalID.get())
-								nearNextLocalID.set(_record.getLocalID());
-						} else if (_record.getLocalID() == fromTransactionID) {
-							if (_record.isConcernedBy(hook.getHostID())) {
-								oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_INDIRECT_TRANSACTION);
-								oos.writeObject(_record.getHook().getHostID(), false);
-								oos.writeLong(_record.getID());
-								oos.writeLong(_record.getLocalID());
-								oos.writeLong(_record.getTimeUTC());
-								oos.writeBoolean(_record.isForced());
-								oos.writeBoolean(_record.peersInformedFull);
-								if (!_record.peersInformedFull) {
-									oos.writeCollection(_record.peersInformed, false, MAX_SIZE_IN_BYTES_FOR_INFORMED_PEERS);
-								}
-								final Reference<Integer> n = new Reference<>(0);
-								getDatabaseDistantEventsTable()
-										.getOrderedRecords(new Filter<DatabaseDistantEventsTable.Record>() {
+								  @Override
+								  public boolean nextRecord(Record _record) throws DatabaseException {
+									  try {
+										  if (_record.getLocalID() > fromTransactionID) {
+											  if (_record.getLocalID() < nearNextLocalID.get())
+												  nearNextLocalID.set(_record.getLocalID());
+										  } else if (_record.getLocalID() == fromTransactionID) {
+											  if (_record.isConcernedBy(hook.getHostID())) {
+												  oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_INDIRECT_TRANSACTION);
+												  oos.writeObject(_record.getHook().getHostID(), false);
+												  oos.writeLong(_record.getID());
+												  oos.writeLong(_record.getLocalID());
+												  oos.writeLong(_record.getTimeUTC());
+												  oos.writeBoolean(_record.isForced());
+												  oos.writeBoolean(_record.peersInformedFull);
+												  if (!_record.peersInformedFull) {
+													  oos.writeCollection(_record.peersInformed, false, MAX_SIZE_IN_BYTES_FOR_INFORMED_PEERS);
+												  }
+												  final Reference<Integer> n = new Reference<>(0);
+												  getDatabaseDistantEventsTable()
+														  .getOrderedRecords(new Filter<>() {
 
-											@Override
-											public boolean nextRecord(
-													com.distrimind.ood.database.DatabaseDistantEventsTable.Record _record)
-													throws DatabaseException {
-												_record.export(oos);
-												n.set(n.get()+1);
-												return false;
-											}
-										}, "transaction=%transaction", new Object[] { "transaction", _record }, true,
-												"position");
-								if (n.get() == 0)
-									throw new IllegalAccessError();
-								oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_INDIRECT_TRANSACTION_FINISHED);
-								number.set(number.get()+n.get());
+																				 @Override
+																				 public boolean nextRecord(
+																						 com.distrimind.ood.database.DatabaseDistantEventsTable.Record _record)
+																						 throws DatabaseException {
+																					 _record.export(oos);
+																					 n.set(n.get() + 1);
+																					 return false;
+																				 }
+																			 }, "transaction=%transaction", new Object[]{"transaction", _record}, true,
+																  "position");
+												  if (n.get() == 0)
+													  throw new IllegalAccessError();
+												  oos.writeByte(DatabaseTransactionsPerHostTable.EXPORT_INDIRECT_TRANSACTION_FINISHED);
+												  number.set(number.get() + n.get());
 
-								if (number.get()>=maxEventsRecords)
-									stopTableParsing();
-							}
-						}
-						return false;
-					} catch (Exception e) {
-						throw DatabaseException.getDatabaseException(e);
-					}
-				}
-			}, "hook!=%hook AND localID>=%currentLocalID",
+												  if (number.get() >= maxEventsRecords)
+													  stopTableParsing();
+											  }
+										  }
+										  return false;
+									  } catch (Exception e) {
+										  throw DatabaseException.getDatabaseException(e);
+									  }
+								  }
+							  }, "hook!=%hook AND localID>=%currentLocalID",
 					new Object[] { "hook", hook, "currentLocalID", fromTransactionID}, true, "id");
 			return number.get();
 		} catch (Exception e) {

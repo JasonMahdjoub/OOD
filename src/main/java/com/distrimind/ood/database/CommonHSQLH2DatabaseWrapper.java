@@ -92,7 +92,7 @@ public abstract class CommonHSQLH2DatabaseWrapper extends DatabaseWrapper{
 	 *
 	 * @throws IllegalArgumentException If the given file is a directory.
 	 *
-	 * @throws DatabaseLoadingException If a Sql exception exception occurs.
+	 * @throws DatabaseLoadingException If a Sql exception occurs.
 	 */
 	/*
 	 * public HSQLDBWrapper(URL _url) throws IllegalArgumentException,

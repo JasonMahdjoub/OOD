@@ -78,7 +78,7 @@ public class DistantMySQLDBWrapper extends CommonMySQLWrapper{
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
 
 		try  {
-			Connection conn = DriverManager.getConnection(url, user, password.toString());
+			Connection conn = DriverManager.getConnection(url, user, password.toStringBuilder().toString());
 			if (conn==null)
 				throw new DatabaseLoadingException("Failed to make connection!");
 

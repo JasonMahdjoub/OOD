@@ -50,7 +50,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @since OOD 3.0.0
  */
 public final class DatabaseBackupPerClientTable extends Table<DatabaseBackupPerClientTable.Record> {
-	protected DatabaseBackupPerClientTable() throws DatabaseException {
+	DatabaseBackupPerClientTable() throws DatabaseException {
 	}
 
 	public static class Record extends DatabaseRecord

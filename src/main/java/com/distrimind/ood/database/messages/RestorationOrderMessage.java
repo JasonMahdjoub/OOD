@@ -158,12 +158,12 @@ public class RestorationOrderMessage extends DatabaseEvent implements Authentica
 	}
 
 	@Override
-	public DecentralizedValue getHostDestination() throws DatabaseException {
+	public DecentralizedValue getHostDestination()  {
 		return hostDestination;
 	}
 
 	@Override
-	public DecentralizedValue getHostSource() throws DatabaseException {
+	public DecentralizedValue getHostSource() {
 		return hostSource;
 	}
 

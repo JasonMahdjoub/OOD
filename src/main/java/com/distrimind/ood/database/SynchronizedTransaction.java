@@ -41,7 +41,7 @@ import com.distrimind.ood.database.exceptions.TransactionCanceledException;
 
 /**
  * This interface must be used to wrap a set of operations into the database.
- * 
+ * <br>
  * During the call of the function {@link #run()}, concurrent thread can
  * alter the database. If this actual transaction can be executed, 
  * it will be re-executed until the transaction will pass.

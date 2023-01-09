@@ -151,7 +151,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 				(sslRootCert==null?"":"&sslRootCert="+ sslRootCert.toURI())+
 				"&sslHostNameVerifier="+sslHostNameVerifier+
 				"&sslPasswordCallBack="+sslPasswordCallBack+
-				((sslPassword==null || sslPassword.toString()==null)?"":"&sslPassword="+sslPassword)+
+				((sslPassword==null || sslPassword.toStringBuilder()==null)?"":"&sslPassword="+sslPassword)+
 				"&databaseMetadataCacheFields="+databaseMetadataCacheFields+
 				"&databaseMetadataCacheFieldsMiB="+databaseMetadataCacheFieldsMiB+
 				"&prepareThreshold="+prepareThreshold+
@@ -165,7 +165,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	protected Connection reopenConnectionImpl() throws DatabaseLoadingException {
 
 		try  {
-			Connection conn = DriverManager.getConnection(url, user, password.toString());
+			Connection conn = DriverManager.getConnection(url, user, password.toStringBuilder().toString());
 			if (conn==null)
 				throw new DatabaseLoadingException("Failed to make connection!");
 			return conn;
@@ -219,8 +219,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 
 
 	@Override
-	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException {
-		//_openedConnection.getConnection().setReadOnly(!write);
+	void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException {
 		//noinspection MagicConstant
 		_openedConnection.getConnection().setTransactionIsolation(transactionIsolation.getCode());
 	}
@@ -345,7 +344,7 @@ public class DistantPostgreSQLWrapper extends DatabaseWrapper{
 	}
 
 	@Override
-	protected Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
+	Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection c;
 		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(finalizer.databaseName, null, tableName==null?null:tableName.toLowerCase(), columnName==null?null:columnName.toLowerCase());
 		return new CReadQuery(c, rs);

@@ -57,7 +57,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * String field accessor
@@ -124,6 +123,7 @@ public class StringFieldAccessor extends FieldAccessor {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
+	@SuppressWarnings("deprecation")
 	private Object toObject(Object _field_instance)
 	{
 		if (WrappedString.class.isAssignableFrom(field.getType()) && _field_instance instanceof String)

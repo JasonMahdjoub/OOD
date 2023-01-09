@@ -82,7 +82,7 @@ public @interface Field {
 	 * descending order and for queries that select the minimum or maximum value of
 	 * an indexed column.
 	 * 
-	 * @return true if use descending order for the column to create the index
+	 * @return true if this use descending order for the column to create the index
 	 */
 	boolean descendingIndex() default false;
 

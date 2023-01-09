@@ -66,7 +66,7 @@ public class DatabaseConfigurations extends MultiFormatProperties {
 	private DecentralizedValue localPeer;
 	private transient String localPeerString;
 	private boolean permitIndirectSynchronizationBetweenPeers;
-	CentralDatabaseBackupCertificate centralDatabaseBackupCertificate=null;
+	CentralDatabaseBackupCertificate centralDatabaseBackupCertificate;
 	public DatabaseConfigurations(Set<DatabaseConfiguration> configurations) throws DatabaseException {
 		this(configurations,null, null, false);
 	}

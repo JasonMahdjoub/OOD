@@ -45,7 +45,7 @@ public interface EventsTriggerDuringSynchronization {
 	/**
 	 * This function is called when synchronization with central database backup is done,
 	 * and only the current local peer is integrated with the cloud network
-	 *
+	 * <br>
 	 * This function is called only if the synchronization with central database backup is possible
 	 * and before the function {@link #synchronizationWithOtherPeersDone(DatabaseConfiguration)}.
 	 * @param databaseConfiguration the concerned database configuration

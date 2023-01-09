@@ -617,7 +617,7 @@ public abstract class FieldAccessor {
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private static boolean checkCircularityWithNotNullForeignKeys(Class<?> _original_class,
-																  List<Class<?>> _list_classes, Class<?> _new_class) throws PrivilegedActionException {
+																  List<Class<?>> _list_classes, Class<?> _new_class)  {
 		if (_original_class.equals(_new_class))
 			return false;
 		if (_list_classes.contains(_new_class))
@@ -663,7 +663,7 @@ public abstract class FieldAccessor {
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private static boolean checkCircularityWithPrimaryForeignKeys(Class<?> _original_class,
-																  List<Class<?>> _list_classes, Class<?> _new_class) throws PrivilegedActionException {
+																  List<Class<?>> _list_classes, Class<?> _new_class)  {
 		if (_original_class.equals(_new_class))
 			return false;
 		if (_list_classes.contains(_new_class))

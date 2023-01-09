@@ -47,10 +47,7 @@ import java.io.File;
  * @since OOD 2.0.0
  */
 public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedHSQLDBWrapper> {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -5549181783426731120L;
+
 
 	private File directory;
 	private HSQLDBConcurrencyControl concurrencyControl=HSQLDBConcurrencyControl.DEFAULT;
@@ -69,7 +66,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 *
 	 * @param databaseDirectory
 	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
+	 *            exist, it will be automatically created with the correspondent
 	 *            database.
 	 *
 	 * @throws NullPointerException
@@ -87,7 +84,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 * @param databaseConfigurations the database configurations
 	 * @param databaseDirectory
 	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
+	 *            exist, it will be automatically created with the correspondent
 	 *            database.
 	 *
 	 * @throws NullPointerException
@@ -104,7 +101,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 *
 	 * @param databaseDirectory
 	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
+	 *            exist, it will be automatically created with the correspondent
 	 *            database.
 	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
 	 * @throws NullPointerException
@@ -122,7 +119,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 * @param databaseConfigurations the database configurations
 	 * @param databaseDirectory
 	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
+	 *            exist, it will be automatically created with the correspondent
 	 *            database.
 	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
 	 * @throws NullPointerException
@@ -142,7 +139,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 * @param databaseConfigurations the database configurations
 	 * @param databaseDirectory
 	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
+	 *            exist, it will be automatically created with the correspondent
 	 *            database.
 	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
 	 * @param concurrencyControl the concurrency mode
@@ -155,7 +152,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 *            cache used with cached tables. The value can range between 100 KB
 	 *            - 4 GB. The default is 10,000, representing 10,000 kilobytes.
 	 * @param _result_max_memory_rows
-	 *            This property can be set to specify how many rows of each results
+	 *            This property can be set to specify how many rows of each result
 	 *            or temporary table are stored in memory before the table is
 	 *            written to disk. The default is zero and means data is always
 	 *            stored in memory. If this setting is used, it should be set above
@@ -191,7 +188,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 *
 	 * @param databaseDirectory
 	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
+	 *            exist, it will be automatically created with the correspondent
 	 *            database.
 	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
 	 * @param concurrencyControl the concurrency mode
@@ -204,7 +201,7 @@ public class InFileEmbeddedHSQLDatabaseFactory extends DatabaseFactory<EmbeddedH
 	 *            cache used with cached tables. The value can range between 100 KB
 	 *            - 4 GB. The default is 10,000, representing 10,000 kilobytes.
 	 * @param _result_max_memory_rows
-	 *            This property can be set to specify how many rows of each results
+	 *            This property can be set to specify how many rows of each result
 	 *            or temporary table are stored in memory before the table is
 	 *            written to disk. The default is zero and means data is always
 	 *            stored in memory. If this setting is used, it should be set above

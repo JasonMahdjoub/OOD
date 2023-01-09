@@ -49,7 +49,7 @@ import com.distrimind.util.properties.MultiFormatProperties;
 @SuppressWarnings("FieldMayBeFinal")
 public class BackupConfiguration extends MultiFormatProperties {
 	/**
-	 * A complete nativeBackup will be done with this regular interval. If will be understood as a nativeBackup reference.
+	 * A complete nativeBackup will be done with this regular interval. It will be understood as a nativeBackup reference.
 	 */
 	private long backupReferenceDurationInMs;
 	/**

@@ -39,7 +39,7 @@ package com.distrimind.ood.database.exceptions;
 
 /**
  * This exception is generated if the user attempted to process an operation
- * with a record which does not exists into the database. This exception mainly
+ * with a record which does not exist into the database. This exception mainly
  * occurs when the user attempts to work with a deleted record.
  * 
  * @author Jason Mahdjoub

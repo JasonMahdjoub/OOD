@@ -398,21 +398,18 @@ public class DatabaseConfigurationsBuilder {
 		wrapper.getSynchronizer().checkDisconnections();
 	}
 	private Set<DecentralizedValue> checkPeersToAdd() throws DatabaseException {
-		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Set<DecentralizedValue>>() {
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public Set<DecentralizedValue> run() throws Exception {
 
-				Set<DecentralizedValue> peersAdded=null;
-				Set<DecentralizedValue> peersID=configurations.getDistantPeers();
-				if (peersID!=null && peersID.size()>0)
-				{
-					for (DecentralizedValue dv : peersID)
-					{
-						if (!wrapper.getDatabaseHooksTable().hasRecords("concernsDatabaseHost=%cdh and hostID=%h", "cdh", false, "h", dv))
-						{
+				Set<DecentralizedValue> peersAdded = null;
+				Set<DecentralizedValue> peersID = configurations.getDistantPeers();
+				if (peersID != null && peersID.size() > 0) {
+					for (DecentralizedValue dv : peersID) {
+						if (!wrapper.getDatabaseHooksTable().hasRecords("concernsDatabaseHost=%cdh and hostID=%h", "cdh", false, "h", dv)) {
 							wrapper.getDatabaseHooksTable().initDistantHook(dv);
-							if (peersAdded==null)
-								peersAdded=new HashSet<>();
+							if (peersAdded == null)
+								peersAdded = new HashSet<>();
 							peersAdded.add(dv);
 							if (configurations.useCentralBackupDatabase()) {
 								wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
@@ -444,16 +441,16 @@ public class DatabaseConfigurationsBuilder {
 
 	@SuppressWarnings("UnusedReturnValue")
 	private boolean checkDatabaseToSynchronize() throws DatabaseException {
-		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public Boolean run() throws Exception {
 
-				Set<DatabaseConfiguration> packagesToSynchronize=new HashSet<>();
+				Set<DatabaseConfiguration> packagesToSynchronize = new HashSet<>();
 				for (DatabaseConfiguration c : configurations.getDatabaseConfigurations()) {
 					if (c.isDecentralized()) {
 						Set<DecentralizedValue> sps = c.getDistantPeersThatCanBeSynchronizedWithThisDatabase();
-						if (sps!=null) {
-							wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+						if (sps != null) {
+							wrapper.getDatabaseHooksTable().getRecords(new Filter<>() {
 								@Override
 								public boolean nextRecord(DatabaseHooksTable.Record _record) {
 
@@ -475,7 +472,7 @@ public class DatabaseConfigurationsBuilder {
 				}
 
 				if (currentTransaction.propagate) {
-					wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+					wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<>() {
 						@Override
 						public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 
@@ -515,20 +512,20 @@ public class DatabaseConfigurationsBuilder {
 
 	private boolean checkDatabaseToDesynchronize() throws DatabaseException {
 
-		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public Boolean run() throws Exception {
-				HashMap<Set<String>, Set<DecentralizedValue>> packagesToUnsynchronize=new HashMap<>();
-				Filter<DatabaseHooksTable.Record> f=new Filter<DatabaseHooksTable.Record>() {
+				HashMap<Set<String>, Set<DecentralizedValue>> packagesToUnsynchronize = new HashMap<>();
+				Filter<DatabaseHooksTable.Record> f = new Filter<>() {
 					@Override
 					public boolean nextRecord(DatabaseHooksTable.Record _record) {
 
-						Set<String> packages=_record.getDatabasePackageNames();
-						if (packages!=null && packages.size()>0) {
-							Set<String> ptu=new HashSet<>();
+						Set<String> packages = _record.getDatabasePackageNames();
+						if (packages != null && packages.size() > 0) {
+							Set<String> ptu = new HashSet<>();
 							for (String p : packages) {
 								Optional<DatabaseConfiguration> o = configurations.getDatabaseConfigurations().stream().filter(c -> c.getDatabaseSchema().getPackage().getName().equals(p)).findAny();
-								if (!o.isPresent() || !o.get().isDecentralized() || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase() == null || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(_record.getHostID())) {
+								if (o.isEmpty() || !o.get().isDecentralized() || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase() == null || o.get().getDistantPeersThatCanBeSynchronizedWithThisDatabase().contains(_record.getHostID())) {
 									ptu.add(p);
 								}
 							}
@@ -540,14 +537,13 @@ public class DatabaseConfigurationsBuilder {
 						return false;
 					}
 				};
-				if (currentTransaction.removedPeersID==null)
+				if (currentTransaction.removedPeersID == null)
 					wrapper.getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=%cdh", "cdh", false);
 				else
 					wrapper.getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=%cdh and hostID not in %removedPeersID", "cdh", false, "removedPeersID", currentTransaction.removedPeersID);
 
-				if (currentTransaction.propagate)
-				{
-					wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+				if (currentTransaction.propagate) {
+					wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<>() {
 						@Override
 						public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 							for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
@@ -561,7 +557,7 @@ public class DatabaseConfigurationsBuilder {
 						wrapper.getSynchronizer().receivedHookDesynchronizeRequest(new HookDesynchronizeRequest(configurations.getLocalPeer(), configurations.getLocalPeer(), e.getKey(), e.getValue()));
 					}
 				}
-				return packagesToUnsynchronize.size()>0;
+				return packagesToUnsynchronize.size() > 0;
 			}
 
 			@Override
@@ -584,20 +580,20 @@ public class DatabaseConfigurationsBuilder {
 	}
 
 	private boolean checkConnexionsToRemove() throws DatabaseException {
-		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public Boolean run() throws Exception {
-				if (currentTransaction.removedPeersID!=null) {
+				if (currentTransaction.removedPeersID != null) {
 					for (DecentralizedValue peerIDToRemove : currentTransaction.removedPeersID) {
-						Reference<Boolean> removeLocalNow=new Reference<>(true);
-						wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+						Reference<Boolean> removeLocalNow = new Reference<>(true);
+						wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<>() {
 							@Override
 							public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
 								removeLocalNow.set(false);
 								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}, "concernsDatabaseHost=%cdh", "cdh", false);
-						if (configurations.useCentralBackupDatabase() || (currentTransaction.usedCentralBackupDatabase && wrapper.getSynchronizer()!=null && wrapper.getSynchronizer().isInitializedWithCentralBackup())) {
+						if (configurations.useCentralBackupDatabase() || (currentTransaction.usedCentralBackupDatabase && wrapper.getSynchronizer() != null && wrapper.getSynchronizer().isInitializedWithCentralBackup())) {
 							wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
 									new PeerToRemoveMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), peerIDToRemove),
 									getSecureRandom(), getSignatureProfileProviderForAuthenticatedMessagesDestinedToCentralDatabaseBackup());
@@ -611,7 +607,7 @@ public class DatabaseConfigurationsBuilder {
 					}
 
 
-					return currentTransaction.removedPeersID.size()>0;
+					return currentTransaction.removedPeersID.size() > 0;
 				}
 				return false;
 			}
@@ -1005,7 +1001,7 @@ public class DatabaseConfigurationsBuilder {
 								changed = true;
 
 							} else {
-								if (wrapper.getDatabaseHooksTable().hasRecords(new Filter<DatabaseHooksTable.Record>() {
+								if (wrapper.getDatabaseHooksTable().hasRecords(new Filter<>() {
 									@Override
 									public boolean nextRecord(DatabaseHooksTable.Record _record) {
 										return !_record.concernsLocalDatabaseHost() && _record.getDatabasePackageNames().contains(c.getDatabaseSchema().getPackage().getName())
@@ -1074,23 +1070,23 @@ public class DatabaseConfigurationsBuilder {
 									database.cancelCurrentDatabaseRestorationProcessFromCentralDatabaseBackup();
 								}
 								else {
-									wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Object>() {
+									wrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 										@Override
 										public Object run() throws Exception {
 
 											Reference<DecentralizedValue> hostThatApplyRestoration = new Reference<>(null);
-											wrapper.getDatabaseHooksTable().getRecords(new Filter<DatabaseHooksTable.Record>() {
+											wrapper.getDatabaseHooksTable().getRecords(new Filter<>() {
 												@Override
 												public boolean nextRecord(DatabaseHooksTable.Record _record) {
 													if (_record.getDatabasePackageNames().contains(c.getDatabaseSchema().getPackage().getName())
-													   && !_record.getDatabasePackageNamesThatDoNotUseExternalBackup().contains(c.getDatabaseSchema().getPackage().getName())) {
+															&& !_record.getDatabasePackageNamesThatDoNotUseExternalBackup().contains(c.getDatabaseSchema().getPackage().getName())) {
 														hostThatApplyRestoration.set(_record.getHostID());
 														stopTableParsing();
 													}
 													return false;
 												}
 											}, "concernsDatabaseHost=%c", "c", false);
-											if (hostThatApplyRestoration.get()!=null)
+											if (hostThatApplyRestoration.get() != null)
 												wrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(c.getDatabaseSchema().getPackage(), timeUTCInMs, System.currentTimeMillis(), hostThatApplyRestoration.get(), c.isChooseNearestBackupIfNoBackupMatch());
 
 											return null;

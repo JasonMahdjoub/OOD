@@ -39,7 +39,6 @@ import com.distrimind.ood.database.EncryptedDatabaseBackupMetaDataPerFile;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.io.*;
 
-import java.io.IOException;
 
 /**
  * Encrypted backup part coming from central database backup

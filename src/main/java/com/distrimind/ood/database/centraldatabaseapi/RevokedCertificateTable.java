@@ -49,7 +49,7 @@ import java.util.Arrays;
  * @since Utils 3.0.0
  */
 public final class RevokedCertificateTable extends Table<RevokedCertificateTable.Record> {
-	protected RevokedCertificateTable() throws DatabaseException {
+	RevokedCertificateTable() throws DatabaseException {
 	}
 
 	public static class Record extends DatabaseRecord

@@ -38,7 +38,6 @@ knowledge of the CeCILL-C license and that you accept its terms.
 import com.distrimind.util.DecentralizedIDGenerator;
 import com.distrimind.util.DecentralizedValue;
 import com.distrimind.util.SecuredDecentralizedID;
-import com.distrimind.util.crypto.EncryptionProfileProvider;
 import com.distrimind.util.crypto.IASymmetricPublicKey;
 import com.distrimind.util.crypto.MessageDigestType;
 import com.distrimind.util.crypto.SecureRandomType;

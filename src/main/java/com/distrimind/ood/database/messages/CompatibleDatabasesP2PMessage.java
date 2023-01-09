@@ -74,7 +74,7 @@ public class CompatibleDatabasesP2PMessage extends AbstractCompatibleDatabasesMe
 	}
 
 	@Override
-	public DecentralizedValue getHostDestination() throws DatabaseException {
+	public DecentralizedValue getHostDestination()  {
 		return hostDestination;
 	}
 
@@ -102,12 +102,8 @@ public class CompatibleDatabasesP2PMessage extends AbstractCompatibleDatabasesMe
 
 	@Override
 	public MergeState mergeWithP2PDatabaseEventToSend(DatabaseEvent newEvent) {
-		try {
-			if (newEvent instanceof CompatibleDatabasesP2PMessage && ((CompatibleDatabasesP2PMessage) newEvent).getHostDestination().equals(getHostDestination()))
-				return MergeState.DELETE_OLD;
-		} catch (DatabaseException e) {
-			e.printStackTrace();
-		}
+		if (newEvent instanceof CompatibleDatabasesP2PMessage && ((CompatibleDatabasesP2PMessage) newEvent).getHostDestination().equals(getHostDestination()))
+			return MergeState.DELETE_OLD;
 		return MergeState.NO_FUSION;
 	}
 

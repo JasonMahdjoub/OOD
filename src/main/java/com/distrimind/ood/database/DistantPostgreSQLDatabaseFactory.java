@@ -369,7 +369,7 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 
 	/**
 	 *
-	 * @return The provided value is a class name to use as the SSLSocketFactory when establishing a SSL connection.
+	 * @return The provided value is a class name to use as the SSLSocketFactory when establishing an SSL connection.
 	 */
 	public String getSslFactory() {
 		return sslFactory;
@@ -377,7 +377,7 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 
 	/**
 	 *
-	 * @param sslFactory The provided value is a class name to use as the SSLSocketFactory when establishing a SSL connection.
+	 * @param sslFactory The provided value is a class name to use as the SSLSocketFactory when establishing an SSL connection.
 	 */
 	public void setSslFactory(String sslFactory) {
 		if (sslFactory==null)
@@ -601,7 +601,7 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 	 *
 	 * @return Determine the number of rows fetched in ResultSet by one fetch with trip to the database. Limiting the number of rows are fetch with each trip to the database allow avoids unnecessary memory consumption and as a consequence OutOfMemoryException.
 	 *
-	 * The default is zero, meaning that in ResultSet will be fetch all rows at once. Negative number is not available.
+	 * The default is zero, meaning that in ResultSet will be fetched all rows at once. Negative number is not available.
 	 */
 	public int getDefaultRowFetchSize() {
 		return defaultRowFetchSize;
@@ -610,7 +610,7 @@ public class DistantPostgreSQLDatabaseFactory extends DatabaseFactory<DistantPos
 	/**
 	 * Determine the number of rows fetched in ResultSet by one fetch with trip to the database. Limiting the number of rows are fetch with each trip to the database allow avoids unnecessary memory consumption and as a consequence OutOfMemoryException.
 	 *
-	 * @param defaultRowFetchSize  The default is zero, meaning that in ResultSet will be fetch all rows at once. Negative number is not available.
+	 * @param defaultRowFetchSize  The default is zero, meaning that in ResultSet will be fetched all rows at once. Negative number is not available.
 	 */
 	public void setDefaultRowFetchSize(int defaultRowFetchSize) {
 		this.defaultRowFetchSize = defaultRowFetchSize;

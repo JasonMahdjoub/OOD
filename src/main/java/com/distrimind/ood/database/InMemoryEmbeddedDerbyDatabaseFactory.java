@@ -8,10 +8,6 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @since OOD 2.4.0
  */
 class InMemoryEmbeddedDerbyDatabaseFactory extends DatabaseFactory<EmbeddedDerbyWrapper> {
-	/**
-	 *
-	 */
-	private static final long serialVersionUID = -5549181783426731120L;
 
 	private String databaseName=null;
 
@@ -44,9 +40,6 @@ class InMemoryEmbeddedDerbyDatabaseFactory extends DatabaseFactory<EmbeddedDerby
 				getSecureRandom(), isCreateDatabasesIfNecessaryAndCheckIt());
 	}
 
-	public static long getSerialVersionUID() {
-		return serialVersionUID;
-	}
 
 	public String getDatabaseName() {
 		return databaseName;
