@@ -8159,6 +8159,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			throw new NullPointerException();
 		Thread thread = Thread.currentThread();
 		synchronized (actual_locks) {
+			@SuppressWarnings("deprecation")
 			HashMap<Table<?>, Lock> hm = actual_locks.get(thread.getId());
 			if (hm == null)
 				return null;
@@ -8166,6 +8167,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	static void removeActualLock(Table<?> table, Lock previousLock) {
 		if (table == null)
 			throw new NullPointerException();
@@ -8188,6 +8190,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			throw new NullPointerException();
 		Thread thread = Thread.currentThread();
 		synchronized (actual_locks) {
+			@SuppressWarnings("deprecation")
 			HashMap<Table<?>, Lock> hm = actual_locks.computeIfAbsent(thread.getId(), k -> new HashMap<>());
 			hm.put(table, lock);
 		}
@@ -8306,36 +8309,21 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 		protected void close(ArrayList<Table<?>> _comes_from_tables) throws DatabaseException {
 			if (actual_table == null)
 				return;
-			/*synchronized (actual_locks) */{
-				try {
-					// current_table.current_lock=null;
-					removeActualLock(actual_table, previous_lock);
-					// current_table.current_lock=previous_lock;
-					_comes_from_tables.add(actual_table);
-					for (Lock l : derivedLocks)
-						l.close(_comes_from_tables);
-					derivedLocks.clear();
-					/*for (NeighboringTable nt : actual_table.list_tables_pointing_to_this_table) {
-						Table<?> t = nt.getPointingTable();
-						if (!_comes_from_tables.contains(t))
-                            Objects.requireNonNull(getActualLock(t)).close(_comes_from_tables);
-					}
-					for (ForeignKeyFieldAccessor fa : actual_table.foreign_keys_fields) {
-						Table<?> t = fa.getPointedTable();
-						if (!_comes_from_tables.contains(t)) {
-                            Objects.requireNonNull(getActualLock(t)).close(_comes_from_tables);
-                        }
-					}*/
-				} finally {
-					actual_table.unlockIfNecessary(true);
-				}
+			try {
+				removeActualLock(actual_table, previous_lock);
+				_comes_from_tables.add(actual_table);
+				for (Lock l : derivedLocks)
+					l.close(_comes_from_tables);
+				derivedLocks.clear();
+			} finally {
+				actual_table.unlockIfNecessary(true);
 			}
 		}
 	}
 
 	private static class ReadLock extends Lock {
 		private final List<Lock> derivedLocks=new ArrayList<>();
-		public ReadLock(Table<?> _current_table) throws DatabaseException {
+		private ReadLock(Table<?> _current_table) throws DatabaseException {
 			this(_current_table, new ArrayList<>(20));
 		}
 
@@ -8394,22 +8382,10 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 			/*synchronized (actual_locks) */{
 				try {
 					removeActualLock(actual_table, previous_lock);
-					// current_table.current_lock=previous_lock;
 					_comes_from_tables.add(actual_table);
-					/*
-					 * for (NeighboringTable nt : current_table.list_tables_pointing_to_this_table)
-					 * { Table<?> t=nt.getPointedTable(); if (!_comes_from_tables.contains(t))
-					 * t.current_lock.close(_comes_from_tables); }
-					 */
 					for (Lock l : derivedLocks)
 						l.close(_comes_from_tables);
 					derivedLocks.clear();
-					/*for (ForeignKeyFieldAccessor fa : actual_table.foreign_keys_fields) {
-						Table<?> t = fa.getPointedTable();
-						if (!_comes_from_tables.contains(t)) {
-                            Objects.requireNonNull(getActualLock(t)).close(_comes_from_tables);
-                        }
-					}*/
 				} finally {
 					actual_table.unlockIfNecessary(false);
 				}
@@ -8495,7 +8471,7 @@ public abstract class Table<T extends DatabaseRecord> implements Comparable<Tabl
 	static class PreparedUpdateQuery extends Query {
 		public PreparedStatement statement;
 
-		public PreparedUpdateQuery(Connection _sql_connection, String query) throws SQLException {
+		PreparedUpdateQuery(Connection _sql_connection, String query) throws SQLException {
 			this(_sql_connection, query, false);
 		}
 		public PreparedUpdateQuery(Connection _sql_connection, String query, boolean returnGeneratedKeys) throws SQLException {

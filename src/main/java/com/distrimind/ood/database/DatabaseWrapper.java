@@ -348,7 +348,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 	private final DatabaseSynchronizer synchronizer;
 	protected volatile int maxTransactionsToSynchronizeAtTheSameTime = 1000;
 	volatile int maxTransactionsEventsKeptIntoMemory = 100;
-	protected Database actualDatabaseLoading = null;
+	Database actualDatabaseLoading = null;
 	volatile int maxTransactionEventsKeptIntoMemoryDuringImportInBytes =10000000;
 	private volatile boolean hasOnePeerSynchronized =false;
 	private volatile AbstractSecureRandom randomForKeys;
@@ -1592,8 +1592,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 		private boolean canNotify = true;
 		private final LinkedList<DatabaseEvent> events = new LinkedList<>();
 
-		protected final HashMap<DecentralizedValue, ConnectedPeers> initializedHooks = new HashMap<>();
-		protected final HashMap<DecentralizedValue, ConnectedPeersWithCentralBackup> initializedHooksWithCentralBackup = new HashMap<>();
+		final HashMap<DecentralizedValue, ConnectedPeers> initializedHooks = new HashMap<>();
+		final HashMap<DecentralizedValue, ConnectedPeersWithCentralBackup> initializedHooksWithCentralBackup = new HashMap<>();
 		protected boolean centralBackupInitialized=false;
 		protected boolean centralBackupAvailable=false;
 		private final Condition newEventCondition=finalizer.locker.newCondition();
@@ -4037,7 +4037,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 		}
 	}
 	public static abstract class AbstractDatabaseEventsToSynchronizeP2P extends DatabaseEvent implements P2PBigDatabaseEventToSend, SecureExternalizable {
-		protected transient DatabaseHooksTable.Record hook;
+		transient DatabaseHooksTable.Record hook;
 		protected int hookID;
 		protected DecentralizedValue hostIDSource, hostIDDestination;
 
@@ -4275,6 +4275,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 		private final Set<Table<?>> memoryTablesToRefresh;
 		private final HashMap<Package, BackupRestoreManager.AbstractTransaction> backupManager=new HashMap<>();
 
+		@SuppressWarnings("deprecation")
 		Session(Connection connection, Thread thread) {
 
 			this.connection = connection;
@@ -4303,6 +4304,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 			return connection;
 		}
 
+		@SuppressWarnings("deprecation")
 		boolean isConcernedBy(Thread t) {
 			return threadID == t.getId();
 		}
@@ -5118,7 +5120,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 		
 	}
 
-	protected Session getConnectionAssociatedWithCurrentThread() throws DatabaseException {
+	Session getConnectionAssociatedWithCurrentThread() throws DatabaseException {
 		
 		try {
 			finalizer.lockWrite();
@@ -5246,10 +5248,10 @@ public abstract class DatabaseWrapper implements Cleanable {
         }, true);
 	}
 
-	protected abstract void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
+	abstract void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
 			throws SQLException;
 
-	protected void endTransaction(Session _openedConnection) {
+	void endTransaction(Session _openedConnection) {
 
 	}
 
@@ -6708,13 +6710,13 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 	protected abstract boolean doesTableExists(String tableName) throws Exception;
 
-	protected final ColumnsReadQuery getColumnMetaData(String tableName) throws Exception
+	final ColumnsReadQuery getColumnMetaData(String tableName) throws Exception
 	{
 		return getColumnMetaData(tableName, null);
 	}
 
 
-	protected abstract ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception;
+	abstract ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception;
 
 	protected abstract void checkConstraints(Table<?> table) throws DatabaseException;
 
