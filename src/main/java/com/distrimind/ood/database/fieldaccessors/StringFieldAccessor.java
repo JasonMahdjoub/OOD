@@ -38,13 +38,9 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.fieldaccessors;
 
 import com.distrimind.ood.database.*;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
-import com.distrimind.ood.database.exceptions.FieldDatabaseException;
-import com.distrimind.util.crypto.WrappedEncryptedASymmetricPrivateKeyString;
-import com.distrimind.util.crypto.WrappedEncryptedSymmetricSecretKeyString;
-import com.distrimind.util.crypto.WrappedHashedPasswordString;
-import com.distrimind.util.crypto.WrappedPassword;
+import com.distrimind.ood.database.exceptions.*;
+import com.distrimind.util.InvalidEncodedValue;
+import com.distrimind.util.crypto.*;
 import com.distrimind.util.data_buffers.WrappedSecretString;
 import com.distrimind.util.data_buffers.WrappedString;
 import com.distrimind.util.io.RandomInputStream;
@@ -57,16 +53,18 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * String field accessor
  * @author Jason Mahdjoub
- * @version 1.2
+ * @version 1.3
  * @since OOD 1.0
  */
-public class StringFieldAccessor extends FieldAccessor {
+public class StringFieldAccessor extends FieldAccessor implements FieldAccessorWithStringPattern {
 	protected final SqlField[] sql_fields;
+	private final Pattern pattern;
+	private final String stringPattern;
 
 	public static final long defaultStringLengthLimit=ByteTabFieldAccessor.defaultByteTabSize;
 
@@ -76,7 +74,11 @@ public class StringFieldAccessor extends FieldAccessor {
 		sql_fields = new SqlField[1];
 		long l=limit;
 		if (l<=0) {
-			if (WrappedEncryptedASymmetricPrivateKeyString.class.isAssignableFrom(field.getType()))
+			if (WrappedHashedValueInBase64StringFormat.class.isAssignableFrom(field.getType()))
+			{
+				l=WrappedHashedValueInBase64StringFormat.MAX_CHARS_NUMBER;
+			}
+			else if (WrappedEncryptedASymmetricPrivateKeyString.class.isAssignableFrom(field.getType()))
 			{
 				l=WrappedEncryptedASymmetricPrivateKeyString.MAX_CHARS_NUMBER;
 			}
@@ -100,6 +102,15 @@ public class StringFieldAccessor extends FieldAccessor {
 						? "VARCHAR(" + l + ")"
 						:DatabaseWrapperAccessor.getTextType(sql_connection, l),
 				isNotNull());
+		com.distrimind.ood.database.annotations.Field a=_field.getAnnotation(com.distrimind.ood.database.annotations.Field.class);
+		if (a==null || a.regexPattern()==null || a.regexPattern().isEmpty()) {
+			pattern = null;
+			stringPattern = "";
+		}
+		else {
+			stringPattern=a.regexPattern();
+			pattern=Pattern.compile(stringPattern);
+		}
 	}
 
 	@Override
@@ -112,7 +123,7 @@ public class StringFieldAccessor extends FieldAccessor {
 								+ ") into the DatabaseField class " + field.getDeclaringClass().getName()
 								+ ", is null and should not be (property NotNull present).");
 		}
-		else if (!(_field_instance instanceof String) && !(_field_instance instanceof WrappedString))
+		else if (!(_field_instance instanceof String) && !(_field_instance instanceof WrappedString) && !(_field_instance instanceof StringBuffer) && !(_field_instance instanceof StringBuilder))
 			throw new FieldDatabaseException("The given _field_instance parameter, destined to the field "
 					+ field.getName() + " of the class " + field.getDeclaringClass().getName()
 					+ ", should be a String and not a " + _field_instance.getClass().getName());
@@ -120,40 +131,74 @@ public class StringFieldAccessor extends FieldAccessor {
 		try {
 
 			field.set(_class_instance, toObject(_field_instance));
-		} catch (IllegalArgumentException | IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException | InvalidEncodedValue e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
-	private Object toObject(Object _field_instance)
-	{
-		if (WrappedString.class.isAssignableFrom(field.getType()) && _field_instance instanceof String)
-		{
-			if (WrappedEncryptedASymmetricPrivateKeyString.class.isAssignableFrom(field.getType()))
-			{
-				_field_instance=new WrappedEncryptedASymmetricPrivateKeyString((String)_field_instance);
+
+	@SuppressWarnings("deprecation")
+	private Object toObject(Object _field_instance) throws InvalidEncodedValue, ConstraintsNotRespectedDatabaseException {
+		checkPattern(_field_instance);
+		if (WrappedString.class.isAssignableFrom(field.getType())) {
+			if (_field_instance instanceof StringBuffer)
+				_field_instance=_field_instance.toString();
+			if (_field_instance instanceof String) {
+				String s = (String) _field_instance;
+				if (WrappedEncryptedASymmetricPrivateKeyString.class.isAssignableFrom(field.getType())) {
+					_field_instance = new WrappedEncryptedASymmetricPrivateKeyString(s);
+				} else if (WrappedHashedValueInBase64StringFormat.class.isAssignableFrom(field.getType())) {
+					_field_instance = new WrappedHashedValueInBase64StringFormat(s);
+				} else if (WrappedEncryptedSymmetricSecretKeyString.class.isAssignableFrom(field.getType())) {
+					_field_instance = new WrappedEncryptedSymmetricSecretKeyString(s);
+				} else if (WrappedHashedPasswordString.class.isAssignableFrom(field.getType())) {
+					_field_instance = new WrappedHashedPasswordString(s);
+				} else if (WrappedPassword.class.isAssignableFrom(field.getType())) {
+					_field_instance = new WrappedPassword(s);
+				} else if (WrappedSecretString.class.isAssignableFrom(field.getType())) {
+					_field_instance = new WrappedSecretString(s);
+				} else
+					_field_instance = new WrappedString(s);
 			}
-			else if (WrappedEncryptedSymmetricSecretKeyString.class.isAssignableFrom(field.getType()))
-			{
-				_field_instance=new WrappedEncryptedSymmetricSecretKeyString((String)_field_instance);
+			else if (_field_instance instanceof StringBuilder) {
+				StringBuilder s = (StringBuilder) _field_instance;
+				if (WrappedEncryptedASymmetricPrivateKeyString.class.isAssignableFrom(field.getType())) {
+					_field_instance = new WrappedEncryptedASymmetricPrivateKeyString(s);
+				} else if (WrappedHashedValueInBase64StringFormat.class.isAssignableFrom(field.getType())) {
+					_field_instance = new WrappedHashedValueInBase64StringFormat(s);
+				} else if (WrappedEncryptedSymmetricSecretKeyString.class.isAssignableFrom(field.getType())) {
+					_field_instance = new WrappedEncryptedSymmetricSecretKeyString(s);
+				} else if (WrappedHashedPasswordString.class.isAssignableFrom(field.getType())) {
+					_field_instance = new WrappedHashedPasswordString(s);
+				} else if (WrappedPassword.class.isAssignableFrom(field.getType())) {
+					_field_instance = new WrappedPassword(s);
+				} else if (WrappedSecretString.class.isAssignableFrom(field.getType())) {
+					_field_instance = new WrappedSecretString(s);
+				} else
+					_field_instance = new WrappedString(s);
 			}
-			else if (WrappedHashedPasswordString.class.isAssignableFrom(field.getType()))
-			{
-				_field_instance=new WrappedHashedPasswordString((String)_field_instance);
-			}
-			else if (WrappedPassword.class.isAssignableFrom(field.getType()))
-			{
-				_field_instance=new WrappedPassword((String)_field_instance);
-			}
-			else if (WrappedSecretString.class.isAssignableFrom(field.getType()))
-			{
-				_field_instance=new WrappedSecretString((String)_field_instance);
-			}
-			else
-				_field_instance=new WrappedString((String)_field_instance);
 		}
+		else if (String.class==field.getType()) {
+			if (_field_instance instanceof StringBuilder)
+				_field_instance=_field_instance.toString();
+			else if (_field_instance instanceof StringBuffer)
+				_field_instance=_field_instance.toString();
+		}
+		else if (StringBuilder.class==field.getType()) {
+			if (_field_instance instanceof String)
+				_field_instance=new StringBuilder((String)_field_instance);
+			else if (_field_instance instanceof StringBuffer)
+				_field_instance=new StringBuilder((StringBuffer)_field_instance);
+		} else if (StringBuffer.class==field.getType()) {
+			if (_field_instance instanceof String)
+				_field_instance=new StringBuffer((String)_field_instance);
+			else if (_field_instance instanceof StringBuilder)
+				_field_instance=new StringBuffer((StringBuilder)_field_instance);
+		}
+
 		return _field_instance;
 	}
 
+	@SuppressWarnings("DuplicateExpressions")
 	@Override
 	public boolean equals(Object _class_instance, Object _field_instance) throws DatabaseException {
 		try {
@@ -165,37 +210,52 @@ public class StringFieldAccessor extends FieldAccessor {
 			if (WrappedString.class.isAssignableFrom(field.getType()))
 			{
 
-				if (_field_instance instanceof String)
+				if (_field_instance instanceof CharSequence)
 				{
 					if (WrappedSecretString.class.isAssignableFrom(field.getType())) {
-						return WrappedSecretString.constantTimeAreEqual(o.toString(), (String) _field_instance);
+
+						return WrappedSecretString.constantTimeAreEqual(((WrappedSecretString) o).toStringBuilder(), (CharSequence) _field_instance);
 					}
+					else if (_field_instance instanceof StringBuilder)
+						return ((WrappedString) o).toStringBuilder().equals(_field_instance);
 					else
-						return o.toString().equals(_field_instance);
+						return o.toString().equals(_field_instance.toString());
 				}
 				else
 					return o.equals(_field_instance);
 			}
-			else
+			else if (CharSequence.class.isAssignableFrom(field.getType()))
 			{
 				if (WrappedSecretString.class.isAssignableFrom(_field_instance.getClass()))
 				{
-					return WrappedSecretString.constantTimeAreEqual((String)o, _field_instance.toString());
+					return WrappedSecretString.constantTimeAreEqual((CharSequence)o, ((WrappedSecretString) _field_instance).toStringBuilder());
 				}
 				else if (WrappedString.class.isAssignableFrom(_field_instance.getClass()))
 				{
-					return o.equals(_field_instance.toString());
+					if (StringBuilder.class.isAssignableFrom(field.getType()))
+						return ((WrappedString)_field_instance).toStringBuilder().equals(o);
+					else
+						return o.toString().equals(_field_instance.toString());
 				}
-				else
-					return o.equals(_field_instance);
+				else if (CharSequence.class.isAssignableFrom(_field_instance.getClass()))
+				{
+					if (field.getType()==_field_instance.getClass())
+						return o.equals(_field_instance);
+					else
+						return o.toString().equals(_field_instance.toString());
+				}
 			}
+			throw new DatabaseException("Unexpected exception");
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
 	}
 
 	private static final Class<?>[] compatible_classes = { String.class,
+			StringBuilder.class,
+			StringBuffer.class,
 			WrappedString.class,
+			WrappedHashedValueInBase64StringFormat.class,
 			WrappedEncryptedASymmetricPrivateKeyString.class,
 			WrappedEncryptedSymmetricSecretKeyString.class,
 			WrappedHashedPasswordString.class,
@@ -257,19 +317,31 @@ public class StringFieldAccessor extends FieldAccessor {
 				return 1;
 			else if (obj1 == obj2)
 				return 0;
-			String val1;
-			String val2;
+
 			if (WrappedString.class.isAssignableFrom(field.getType()))
 			{
-				val1 = obj1.toString();
-				val2 = obj2.toString();
+				StringBuilder val1 = ((WrappedString) obj1).toStringBuilder();
+				StringBuilder val2 = ((WrappedString) obj2).toStringBuilder();
+				return val1.compareTo(val2);
 			}
-			else {
-				val1 = (String) obj1;
-				val2 = (String) obj2;
+			else if (StringBuilder.class.isAssignableFrom(field.getType())) {
+				StringBuilder val1 = (StringBuilder) obj1;
+				StringBuilder val2 = (StringBuilder) obj2;
+				return val1.compareTo(val2);
 			}
+			else if (StringBuffer.class.isAssignableFrom(field.getType())) {
+				StringBuffer val1 = (StringBuffer) obj1;
+				StringBuffer val2 = (StringBuffer) obj2;
+				return val1.compareTo(val2);
+			}
+			else if (StringBuffer.class.isAssignableFrom(field.getType())) {
+				String val1 = (String) obj1;
+				String val2 = (String) obj2;
+				return val1.compareTo(val2);
+			}
+			else
+				throw new DatabaseException("Unexpected exception");
 
-			return val1.compareTo(val2);
 		} catch (Exception e) {
 			throw new DatabaseException("", e);
 		}
@@ -313,11 +385,8 @@ public class StringFieldAccessor extends FieldAccessor {
 	@Override
 	public void getValue(PreparedStatement _prepared_statement, int _field_start, Object o) throws DatabaseException {
 		try {
-			String s=null;
-			if (o instanceof WrappedString)
-				s=o.toString();
-			else if (o!=null)
-				s=(String)o;
+			String s=o==null?null:o.toString();
+			checkPattern(s);
 			_prepared_statement.setString(_field_start, s);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -335,15 +404,16 @@ public class StringFieldAccessor extends FieldAccessor {
 	public void serialize(RandomOutputStream _oos, Object _class_instance) throws DatabaseException {
 		try {
 			Object o=getValue(_class_instance);
-			String s=null;
+			CharSequence s=null;
 			if (o instanceof WrappedString)
-				s=o.toString();
-			else if (o!=null)
-				s=(String)o;
+				s=((WrappedString) o).toStringBuilder();
+			else if (o instanceof CharSequence)
+				s=(CharSequence) o;
 
 			if (s != null) {
 				_oos.writeInt(s.length());
-				_oos.writeChars(s);
+				for (int i=0;i<s.length();i++)
+					_oos.writeChar(s.charAt(i));
 			} else
 				_oos.writeInt(-1);
 		} catch (Exception e) {
@@ -358,11 +428,10 @@ public class StringFieldAccessor extends FieldAccessor {
 				if (getLimit() > 0 && size > getLimit())
 					throw new IOException();
 
-				char[] b = new char[size];
-				int index = 0;
+				StringBuilder b = new StringBuilder(size);
 				while (size-- > 0)
-					b[index++] = _ois.readChar();
-				return toObject(String.valueOf(b));
+					b.append(_ois.readChar());
+				return toObject(b);
 			} else if (isNotNull())
 				throw new DatabaseException("field should not be null");
 			else
@@ -385,4 +454,29 @@ public class StringFieldAccessor extends FieldAccessor {
 		return o;
 	}
 
+
+
+	@Override
+	public void checkPattern(Object value) throws PatternNotRespectedDatabaseException, InvalidEncodedValue {
+		if (value==null)
+			return;
+		CharSequence s;
+		if (value instanceof CharSequence)
+			s=(CharSequence)value;
+		else if (value instanceof WrappedString)
+			s=((WrappedString)value).toStringBuilder();
+		else
+			throw new InvalidEncodedValue();
+		if (pattern != null) {
+			synchronized (pattern) {
+				if (!pattern.matcher(s).matches())
+					throw new PatternNotRespectedDatabaseException(stringPattern, s);
+			}
+		}
+	}
+
+	@Override
+	public String getStringPattern() {
+		return stringPattern;
+	}
 }

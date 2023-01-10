@@ -45,7 +45,7 @@ import com.distrimind.util.DecentralizedValue;
  * @since OOD 3.0.0
  */
 public interface MessageDestinedToCentralDatabaseBackup extends DatabaseEventToSend{
-	DecentralizedValue getHostSource() throws DatabaseException;
+	DecentralizedValue getHostSource() ;
 
 
 

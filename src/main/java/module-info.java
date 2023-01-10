@@ -1,4 +1,3 @@
-
 /*
 Copyright or © or Corp. Jason Mahdjoub (01/04/2013)
 
@@ -6,7 +5,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java language
+and the java language 
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -34,37 +33,21 @@ same conditions as regards security.
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
+module com.distrimind.ood {
+	requires transitive com.distrimind.util;
 
-package com.distrimind.ood.database;
-
-import com.distrimind.ood.database.exceptions.TransactionCanceledException;
-
-/**
- * This interface must be used to wrap a set of operations into the database.
- * <br>
- * During the call of the function {@link #run()}, concurrent thread can
- * alter the database. If this actual transaction can be executed, 
- * it will be re-executed until the transaction will pass.
- * 
- * @author Jason Mahdjoub
- * @since 1.0
- * @version 2.0
- * @param <O>
- *            The type of the returned object.
- */
-public abstract class SynchronizedTransaction<O> {
+	requires java.sql;
+	exports com.distrimind.ood;
+	exports com.distrimind.ood.i18n;
+	exports com.distrimind.ood.database;
+	exports com.distrimind.ood.database.annotations;
+	exports com.distrimind.ood.database.centraldatabaseapi;
+	exports com.distrimind.ood.database.exceptions;
+	exports com.distrimind.ood.database.messages;
+	exports com.distrimind.ood.database.tasks;
+	exports com.distrimind.ood.database.filemanager;
+	exports com.distrimind.ood.database.fieldaccessors;
+	exports com.distrimind.ood.interpreter;
 
 
-	public abstract O run() throws Exception;
-
-	public abstract TransactionIsolation getTransactionIsolation();
-
-	public abstract boolean doesWriteData();
-	
-	public abstract void initOrReset() throws Exception;
-	
-	public void cancelTransaction() throws TransactionCanceledException
-	{
-		throw new TransactionCanceledException();
-	}
 }

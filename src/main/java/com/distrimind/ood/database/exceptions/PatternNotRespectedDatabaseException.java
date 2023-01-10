@@ -1,4 +1,4 @@
-
+package com.distrimind.ood.database.exceptions;
 /*
 Copyright or © or Corp. Jason Mahdjoub (01/04/2013)
 
@@ -6,7 +6,7 @@ jason.mahdjoub@distri-mind.fr
 
 This software (Object Oriented Database (OOD)) is a computer program 
 whose purpose is to manage a local database with the object paradigm 
-and the java language
+and the java language 
 
 This software is governed by the CeCILL-C license under French law and
 abiding by the rules of distribution of free software.  You can  use, 
@@ -35,36 +35,13 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-package com.distrimind.ood.database;
-
-import com.distrimind.ood.database.exceptions.TransactionCanceledException;
-
 /**
- * This interface must be used to wrap a set of operations into the database.
- * <br>
- * During the call of the function {@link #run()}, concurrent thread can
- * alter the database. If this actual transaction can be executed, 
- * it will be re-executed until the transaction will pass.
- * 
  * @author Jason Mahdjoub
- * @since 1.0
- * @version 2.0
- * @param <O>
- *            The type of the returned object.
+ * @version 1.0
+ * @since OOD 3.3.0
  */
-public abstract class SynchronizedTransaction<O> {
-
-
-	public abstract O run() throws Exception;
-
-	public abstract TransactionIsolation getTransactionIsolation();
-
-	public abstract boolean doesWriteData();
-	
-	public abstract void initOrReset() throws Exception;
-	
-	public void cancelTransaction() throws TransactionCanceledException
-	{
-		throw new TransactionCanceledException();
+public class PatternNotRespectedDatabaseException extends ConstraintsNotRespectedDatabaseException {
+	public PatternNotRespectedDatabaseException(String stringPattern, CharSequence value) {
+		super("Pattern "+stringPattern+" is not validated with string "+value);
 	}
 }

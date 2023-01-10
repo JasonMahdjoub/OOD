@@ -40,8 +40,6 @@ import com.distrimind.util.UtilClassLoader;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.sql.ResultSet;
 
 /**
@@ -70,18 +68,13 @@ public class InFileEmbeddedAndroidH2DatabaseFactory extends DatabaseFactory<Embe
 		} catch (NoSuchMethodException ignored) {
 			try {
 				Class<?> jsr= UtilClassLoader.getLoader().loadClass("org.h2.util.JSR310");
-				AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-
-					try {
-						Field f = jsr.getDeclaredField("PRESENT");
-						f.setAccessible(true);
-						f.setBoolean(null, false);
-					} catch (NoSuchFieldException | IllegalAccessException e) {
-						e.printStackTrace();
-					}
-
-					return null;
-				});
+				try {
+					Field f = jsr.getDeclaredField("PRESENT");
+					f.setAccessible(true);
+					f.setBoolean(null, false);
+				} catch (NoSuchFieldException | IllegalAccessException e) {
+					e.printStackTrace();
+				}
 
 			} catch (ClassNotFoundException ignored2) {
 			}

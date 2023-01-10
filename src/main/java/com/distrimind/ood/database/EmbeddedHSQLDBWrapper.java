@@ -81,10 +81,8 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 			if (!deepClose || databaseShutdown.getAndSet(true)) {
 				connection.close();
 			} else {
-				try (Statement s = connection.createStatement()) {
-					s.executeQuery("SHUTDOWN;" );
-				} finally {
-					connection.close();
+				try (connection; Statement s = connection.createStatement()) {
+					s.executeQuery("SHUTDOWN;");
 				}
 			}
 
@@ -237,7 +235,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	 *
 	 * @throws IllegalArgumentException If the given file is a directory.
 	 *
-	 * @throws DatabaseLoadingException If a Sql exception exception occurs.
+	 * @throws DatabaseLoadingException If a Sql exception occurs.
 	 */
 	/*
 	 * public HSQLDBWrapper(URL _url) throws IllegalArgumentException,
@@ -263,7 +261,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	}
 
 	@Override
-	protected ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
+	ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		return new CReadQuery(sql_connection, new SqlQuery(
 				"SELECT COLUMN_NAME, TYPE_NAME, COLUMN_SIZE, IS_NULLABLE, IS_AUTOINCREMENT, ORDINAL_POSITION FROM INFORMATION_SCHEMA.SYSTEM_COLUMNS WHERE TABLE_NAME='"
@@ -776,7 +774,7 @@ public class EmbeddedHSQLDBWrapper extends CommonHSQLH2DatabaseWrapper {
 	}
 
 	@Override
-	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
+	void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
 			throws SQLException {
 		Connection c=_openedConnection.getConnection();
 		//c.setReadOnly(!write);

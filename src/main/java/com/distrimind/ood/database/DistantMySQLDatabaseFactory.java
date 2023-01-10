@@ -116,7 +116,7 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 	 * @param sslMode  the ssl mode
 	 * @param paranoid Take measures to prevent exposure sensitive information in error messages and clear data structures holding sensitive data when possible? (defaults to 'false')
 	 * @param serverRSAPublicKeyFile File path to the server RSA public key file for sha256_password authentication. If not specified, the public key will be retrieved from the server.
-	 * @param autoReconnect Should the driver try to re-establish stale and/or dead connections? If enabled the driver will throw an exception for a queries issued on a stale or dead connection, which belong to the current transaction, but will attempt reconnect before the next query issued on the connection in a new transaction. The use of this feature is not recommended, because it has side effects related to session state and data consistency when applications don't handle SQLExceptions properly, and is only designed to be used when you are unable to configure your application to handle SQLExceptions resulting from dead and stale connections properly. Alternatively, as a last option, investigate setting the MySQL server variable "wait_timeout" to a high value, rather than the default of 8 hours.
+	 * @param autoReconnect Should the driver try to re-establish stale and/or dead connections? If enabled the driver will throw an exception for a queries issued on a stale or dead connection, which belong to the current transaction, but will attempt to reconnect before the next query issued on the connection in a new transaction. The use of this feature is not recommended, because it has side effects related to session state and data consistency when applications don't handle SQLExceptions properly, and is only designed to be used when you are unable to configure your application to handle SQLExceptions resulting from dead and stale connections properly. Alternatively, as a last option, investigate setting the MySQL server variable "wait_timeout" to a high value, rather than the default of 8 hours.
 	 * @param prefetchNumberRows When set to a non-zero value N, causes all queries in the connection to return N rows at a time rather than the entire result set. Useful for queries against very large tables where it is not practical to retrieve the whole result set at once. You can scroll through the result set, N records at a time.
 	 * This option works only with forward-only cursors. It does not work when the option parameter MULTI_STATEMENTS is set. It can be used in combination with the option parameter NO_CACHE. Its behavior in ADO applications is undefined: the prefetching might or might not occur. Added in 5.1.11.
 	 * @param noCache Do not cache the results locally in the driver, instead read from server (mysql_use_result()). This works only for forward-only cursors. This option is very important in dealing with large tables when you do not want the driver to cache the entire result set.
@@ -142,7 +142,7 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 	 * @param sslMode  the ssl mode
 	 * @param paranoid Take measures to prevent exposure sensitive information in error messages and clear data structures holding sensitive data when possible? (defaults to 'false')
 	 * @param serverRSAPublicKeyFile File path to the server RSA public key file for sha256_password authentication. If not specified, the public key will be retrieved from the server.
-	 * @param autoReconnect Should the driver try to re-establish stale and/or dead connections? If enabled the driver will throw an exception for a queries issued on a stale or dead connection, which belong to the current transaction, but will attempt reconnect before the next query issued on the connection in a new transaction. The use of this feature is not recommended, because it has side effects related to session state and data consistency when applications don't handle SQLExceptions properly, and is only designed to be used when you are unable to configure your application to handle SQLExceptions resulting from dead and stale connections properly. Alternatively, as a last option, investigate setting the MySQL server variable "wait_timeout" to a high value, rather than the default of 8 hours.
+	 * @param autoReconnect Should the driver try to re-establish stale and/or dead connections? If enabled the driver will throw an exception for a queries issued on a stale or dead connection, which belong to the current transaction, but will attempt to reconnect before the next query issued on the connection in a new transaction. The use of this feature is not recommended, because it has side effects related to session state and data consistency when applications don't handle SQLExceptions properly, and is only designed to be used when you are unable to configure your application to handle SQLExceptions resulting from dead and stale connections properly. Alternatively, as a last option, investigate setting the MySQL server variable "wait_timeout" to a high value, rather than the default of 8 hours.
 	 * @param prefetchNumberRows When set to a non-zero value N, causes all queries in the connection to return N rows at a time rather than the entire result set. Useful for queries against very large tables where it is not practical to retrieve the whole result set at once. You can scroll through the result set, N records at a time.
 	 * This option works only with forward-only cursors. It does not work when the option parameter MULTI_STATEMENTS is set. It can be used in combination with the option parameter NO_CACHE. Its behavior in ADO applications is undefined: the prefetching might or might not occur. Added in 5.1.11.
 	 * @param noCache Do not cache the results locally in the driver, instead read from server (mysql_use_result()). This works only for forward-only cursors. This option is very important in dealing with large tables when you do not want the driver to cache the entire result set.
@@ -237,7 +237,7 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 
 	/**
 	 *
-	 * @return true if take measures to prevent exposure sensitive information in error messages and clear data structures holding sensitive data when possible? (defaults to 'false')
+	 * @return true if  measures are taken to prevent exposure sensitive information in error messages and clear data structures holding sensitive data when possible? (defaults to 'false')
 	 */
 	public boolean isParanoid() {
 		return paranoid;
@@ -287,7 +287,7 @@ public class DistantMySQLDatabaseFactory extends CommonMySQLDatabaseFactory<Dist
 
 	/**
 	 *
-	 * @return true if do not cache the results locally in the driver.
+	 * @return true if this does not cache the results locally in the driver.
 	 */
 	public boolean isNoCache() {
 		return noCache;

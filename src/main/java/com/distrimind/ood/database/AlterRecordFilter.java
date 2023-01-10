@@ -77,7 +77,7 @@ public abstract class AlterRecordFilter<T> {
 
 	/**
 	 * Must be called into the function {@link #nextRecord(Object)}. This function
-	 * aims to remove the current record. Do not works if the current record is
+	 * aims to remove the current record. Do not work if the current record is
 	 * pointed by other records.
 	 * 
 	 */

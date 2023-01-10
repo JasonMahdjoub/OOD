@@ -48,7 +48,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
 final class DatabaseTable extends Table<DatabaseTable.Record> {
 
 	@SuppressWarnings("unused")
-	protected DatabaseTable() throws DatabaseException {
+	DatabaseTable() throws DatabaseException {
 	}
 
 	public static class Record extends DatabaseRecord

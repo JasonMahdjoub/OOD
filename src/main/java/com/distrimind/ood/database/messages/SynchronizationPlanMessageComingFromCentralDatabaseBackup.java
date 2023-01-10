@@ -176,9 +176,6 @@ public class SynchronizationPlanMessageComingFromCentralDatabaseBackup implement
 	public Map<String, Long> getLastValidatedTransactionsUTCForDestinationHost() {
 		return lastValidatedTransactionsUTCForDestinationHost;
 	}
-	/*public Map<DecentralizedValue, LastValidatedLocalAndDistantID> getLastValidatedIDsPerHost(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
-		return InitialMessageComingFromCentralBackup.getLastValidatedIDsPerHost(encryptionProfileProvider, lastValidatedAndEncryptedIDsPerHost);
-	}*/
 
 	public Map<DecentralizedValue, Long> getLastValidatedIDsPerHost(EncryptionProfileProvider encryptionProfileProvider) throws IOException {
 		if (lastValidatedDistantIdsPerHost==null)

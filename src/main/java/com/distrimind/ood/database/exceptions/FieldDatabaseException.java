@@ -38,7 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.exceptions;
 
 /**
- * This exception occurs when the given fields does not corresponds with a
+ * This exception occurs when the given fields do not correspond with a
  * table. It can also be generated when given fields are not authorized with the
  * current function.
  * 

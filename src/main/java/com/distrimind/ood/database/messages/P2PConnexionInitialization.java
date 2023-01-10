@@ -86,12 +86,12 @@ public class P2PConnexionInitialization extends DatabaseEvent implements P2PData
 	}
 
 	@Override
-	public DecentralizedValue getHostDestination() throws DatabaseException {
+	public DecentralizedValue getHostDestination()  {
 		return hostDestination;
 	}
 
 	@Override
-	public DecentralizedValue getHostSource() throws DatabaseException {
+	public DecentralizedValue getHostSource()  {
 		return hostSource;
 	}
 

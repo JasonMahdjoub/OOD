@@ -61,7 +61,7 @@ final class IDTable extends Table<IDTable.Record> {
 		protected long transactionID;
 	}
 
-	protected IDTable() throws DatabaseException {
+	IDTable() throws DatabaseException {
 		super();
 	}
 
@@ -110,7 +110,7 @@ final class IDTable extends Table<IDTable.Record> {
 	@SuppressWarnings("SameParameterValue")
 	private long getAndIncrementID(int id) throws DatabaseException {
 
-		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
+		return getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public Long run() throws Exception {
 				Record r = getRecord("id", id);

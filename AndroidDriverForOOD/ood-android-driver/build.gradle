@@ -66,29 +66,30 @@ android {
     }
 
     sourceSets {
-        main.java.srcDirs += '../../src/main/java'
-        main.resources.srcDirs += '../../src/main/resources'
+        /*main.java.srcDirs += '../../src/main/java'
+        main.resources.srcDirs += '../../src/main/resources'*/
         androidTest.java.srcDirs += '../../src/test/java'
         androidTest.resources.srcDirs += '../../src/test/resources'
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
     namespace 'com.distrimind.ood'
 
 }
-apply from: '../../common_dependencies.gradle'
+//apply from: '../../common_dependencies.gradle'
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    androidTestImplementation 'org.testng:testng:7.5'
+    androidTestImplementation 'org.testng:testng:7.7.1'
     var slf4jVersion='1.7.35'
     testImplementation 'org.slf4j:slf4j-api:'+slf4jVersion
     testImplementation 'org.slf4j:slf4j-simple:'+slf4jVersion
-    androidTestImplementation(group:'com.h2database', name:'h2', version:'2.1.210')
+    androidTestImplementation(group:'com.h2database', name:'h2', version: '2.1.214')
     implementation 'org.sqldroid:sqldroid:1.0.3'
     implementation 'androidx.appcompat:appcompat:1.5.1'
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.4'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    implementation(group:'com.distrimind.ood', name:'OOD', version: '3.3.0-STABLE')
 }

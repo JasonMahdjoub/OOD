@@ -127,10 +127,10 @@ public class DatabaseTasksManager {
 			{
 				final ScheduledPeriodicTask scheduledPeriodicTask =(ScheduledPeriodicTask)scheduledTask;
 				if (isAnnotation()) {
-					return databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
+					return databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 						@Override
 						public Long run() throws Exception {
-							ExecutedTasksTable.Record r = executedTasksTable.getRecord("tableClass", declaredOnTable.getClass(),"annotationPosition",annotationPosition, "strategyClass", scheduledPeriodicTask.getStrategyClass());
+							ExecutedTasksTable.Record r = executedTasksTable.getRecord("tableClass", declaredOnTable.getClass(), "annotationPosition", annotationPosition, "strategyClass", scheduledPeriodicTask.getStrategyClass());
 							if (r == null) {
 								return Long.MIN_VALUE;
 							} else {
@@ -337,26 +337,23 @@ public class DatabaseTasksManager {
 	}
 
 	private long getNextTimeOfExecution(Table<?> table, int annotationPosition, ScheduledPeriodicTask scheduledPeriodicTask) throws DatabaseException {
-		return databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<Long>() {
+		return databaseWrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public Long run() throws Exception {
-				ExecutedTasksTable.Record r=executedTasksTable.getRecord("strategyClass", scheduledPeriodicTask.getStrategyClass(), "tableClass", table.getClass(), "annotationPosition", annotationPosition);
-				if (r==null)
-				{
-					r=new ExecutedTasksTable.Record(table, annotationPosition, scheduledPeriodicTask.getStrategyClass());
-					long n=scheduledPeriodicTask.getNextOccurrenceInTimeUTCAfter(r.getLastExecutionTimeUTC());
-					if (n>scheduledPeriodicTask.getEndTimeUTCInMs())
+				ExecutedTasksTable.Record r = executedTasksTable.getRecord("strategyClass", scheduledPeriodicTask.getStrategyClass(), "tableClass", table.getClass(), "annotationPosition", annotationPosition);
+				if (r == null) {
+					r = new ExecutedTasksTable.Record(table, annotationPosition, scheduledPeriodicTask.getStrategyClass());
+					long n = scheduledPeriodicTask.getNextOccurrenceInTimeUTCAfter(r.getLastExecutionTimeUTC());
+					if (n > scheduledPeriodicTask.getEndTimeUTCInMs())
 						return Long.MIN_VALUE;
 					executedTasksTable.addRecord(r);
 					return n;
-				}
-				else {
-					long n= scheduledPeriodicTask.getNextOccurrenceInTimeUTCAfter(r.getLastExecutionTimeUTC());
-					if (n>scheduledPeriodicTask.getEndTimeUTCInMs()) {
+				} else {
+					long n = scheduledPeriodicTask.getNextOccurrenceInTimeUTCAfter(r.getLastExecutionTimeUTC());
+					if (n > scheduledPeriodicTask.getEndTimeUTCInMs()) {
 						executedTasksTable.removeRecord(r);
 						return Long.MIN_VALUE;
-					}
-					else {
+					} else {
 						executedTasksTable.updateRecord(r, "toRemove", false);
 						return n;
 					}
@@ -385,23 +382,23 @@ public class DatabaseTasksManager {
 		if (currentDatabasePackageLoading !=null)
 			throw new IllegalAccessError();
 		this.currentDatabasePackageLoading =databasePackageNameLoading;
-		executedTasksTable.updateRecords(new AlterRecordFilter<ExecutedTasksTable.Record>() {
+		executedTasksTable.updateRecords(new AlterRecordFilter<>() {
 			@Override
 			public void nextRecord(ExecutedTasksTable.Record _record) throws DatabaseException {
 				update("toRemove", true);
 			}
-		}, "databasePackageName=%databasePackageLoading", "databasePackageLoading", databasePackageNameLoading.getName());
+		}, "databasePackageName=:databasePackageLoading", "databasePackageLoading", databasePackageNameLoading.getName());
 	}
 	@SuppressWarnings("unused")
 	void endPackageLoading() throws DatabaseException {
 		if (currentDatabasePackageLoading ==null)
 			throw new IllegalAccessError();
-		executedTasksTable.removeRecords(new Filter<ExecutedTasksTable.Record>() {
+		executedTasksTable.removeRecords(new Filter<>() {
 			@Override
 			public boolean nextRecord(ExecutedTasksTable.Record _record) {
 				return true;
 			}
-		}, "databasePackageName=%databasePackageLoading and toRemove=%b", "databasePackageLoading", currentDatabasePackageLoading.getName(), "b", true);
+		}, "databasePackageName=:databasePackageLoading and toRemove=:b", "databasePackageLoading", currentDatabasePackageLoading.getName(), "b", true);
 		this.currentDatabasePackageLoading =null;
 	}
 	private ZoneOffset getZoneOffset(Table<?> table, String offsetId, String zoneId) throws DatabaseException {

@@ -199,18 +199,18 @@ public class DatabaseConfiguration extends MultiFormatProperties {
 
 	/*
 	 * 	@param createDatabaseIfNecessaryAndCheckItDuringLoading
-	 *            If set to false, and if the database does not exists, generate a
+	 *            If set to false, and if the database does not exist, generate a
 	 *            DatabaseException. If set to true, and if the database does not
-	 *            exists, create it. Use
+	 *            exist, create it. Use
 	 *            {@link DatabaseConfiguration#getDatabaseLifeCycles()} if the
-	 *            database is created and if transfer from old database must done.
+	 *            database is created and if transfer from old database must be done.
 	 */
 	public void setCreateDatabaseIfNecessaryAndCheckItDuringLoading(boolean createDatabaseIfNecessaryAndCheckItDuringLoading) {
 		this.createDatabaseIfNecessaryAndCheckItDuringLoading = createDatabaseIfNecessaryAndCheckItDuringLoading;
 	}
 
 	/*
-	 * 	@return false if an exception is generated if the database loading, when it does not exists. Moreover, do not check the database schema during loading.
+	 * 	@return false if an exception is generated if the database loading, when it does not exist. Moreover, do not check the database schema during loading.
 	 */
 	public Set<DecentralizedValue> getDistantPeersThatCanBeSynchronizedWithThisDatabase() {
 		return distantPeersThatCanBeSynchronizedWithThisDatabase==null?null:Collections.unmodifiableSet(distantPeersThatCanBeSynchronizedWithThisDatabase);

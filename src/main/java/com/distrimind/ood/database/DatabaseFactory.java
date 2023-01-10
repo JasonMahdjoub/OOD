@@ -53,10 +53,6 @@ import java.security.NoSuchProviderException;
  * @since OOD 2.0.0
  */
 public abstract class DatabaseFactory<DW extends DatabaseWrapper> extends MultiFormatProperties {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 3751773842248044333L;
 
 	private volatile transient DW wrapper;
 	protected EncryptionProfileProviderFactory signatureProfileFactoryForAuthenticatedMessagesDestinedToCentralDatabaseBackup;

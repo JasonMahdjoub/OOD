@@ -348,7 +348,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 	private final DatabaseSynchronizer synchronizer;
 	protected volatile int maxTransactionsToSynchronizeAtTheSameTime = 1000;
 	volatile int maxTransactionsEventsKeptIntoMemory = 100;
-	protected Database actualDatabaseLoading = null;
+	Database actualDatabaseLoading = null;
 	volatile int maxTransactionEventsKeptIntoMemoryDuringImportInBytes =10000000;
 	private volatile boolean hasOnePeerSynchronized =false;
 	private volatile AbstractSecureRandom randomForKeys;
@@ -889,16 +889,15 @@ public abstract class DatabaseWrapper implements Cleanable {
 				runSynchronizedTransaction(new SynchronizedTransaction<Void>() {
 					@Override
 					public Void run() throws Exception {
-						getDatabaseHooksTable().updateRecords(new AlterRecordFilter<Record>() {
+						getDatabaseHooksTable().updateRecords(new AlterRecordFilter<>() {
 							@Override
 							public void nextRecord(Record _record) throws DatabaseException {
-								if (!_record.concernsLocalDatabaseHost() && _record.getPairingState()== DatabaseHooksTable.PairingState.PAIRED
+								if (!_record.concernsLocalDatabaseHost() && _record.getPairingState() == DatabaseHooksTable.PairingState.PAIRED
 										&& _record.getDatabasePackageNames().contains(synchronizationPlanMessageComingFromCentralDatabaseBackup.getPackageString())
-								)
-								{
-									if (_record.getLastValidatedDistantTransactionID()==-1)
+								) {
+									if (_record.getLastValidatedDistantTransactionID() == -1)
 										update("lastValidatedDistantTransactionID", 0L);
-									if (_record.getLastValidatedLocalTransactionID()==-1)
+									if (_record.getLastValidatedLocalTransactionID() == -1)
 										update("lastValidatedLocalTransactionID", 0L);
 								}
 							}
@@ -1592,8 +1591,8 @@ public abstract class DatabaseWrapper implements Cleanable {
 		private boolean canNotify = true;
 		private final LinkedList<DatabaseEvent> events = new LinkedList<>();
 
-		protected final HashMap<DecentralizedValue, ConnectedPeers> initializedHooks = new HashMap<>();
-		protected final HashMap<DecentralizedValue, ConnectedPeersWithCentralBackup> initializedHooksWithCentralBackup = new HashMap<>();
+		final HashMap<DecentralizedValue, ConnectedPeers> initializedHooks = new HashMap<>();
+		final HashMap<DecentralizedValue, ConnectedPeersWithCentralBackup> initializedHooksWithCentralBackup = new HashMap<>();
 		protected boolean centralBackupInitialized=false;
 		protected boolean centralBackupAvailable=false;
 		private final Condition newEventCondition=finalizer.locker.newCondition();
@@ -1658,7 +1657,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 		}
 
 		void cancelExtendedTransaction() throws DatabaseException {
-			getDatabaseTransactionEventsTable().removeRecordsWithCascade("id>=%id", "id", lastTransactionID);
+			getDatabaseTransactionEventsTable().removeRecordsWithCascade("id>=:id", "id", lastTransactionID);
 			getTransactionIDTable().setLastTransactionID(lastTransactionID);
 			lastTransactionID=Long.MIN_VALUE;
 			extendedTransactionInProgress=false;
@@ -1986,15 +1985,15 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 		void cleanTransactionsAfterRestoration(String databasePackage, long timeUTCOfRestorationInMs, long timeWhenRestorationWasDone, Long transactionToDeleteUpperLimitUTC, boolean launchRestoration, boolean chooseNearestBackupIfNoBackupMatch) throws DatabaseException {
 
-			runSynchronizedTransaction(new SynchronizedTransaction<Object>() {
+			runSynchronizedTransaction(new SynchronizedTransaction<>() {
 				@Override
 				public Object run() throws Exception {
 					getDatabaseTable().updateLastRestorationTimeUTCInMS(databasePackage, timeWhenRestorationWasDone);
 
 					if (transactionToDeleteUpperLimitUTC != null)
-						getDatabaseTransactionEventsTable().removeRecordsWithCascade("concernedDatabasePackage=%c and timeUTC<=%l", "c", databasePackage, "l", transactionToDeleteUpperLimitUTC);
+						getDatabaseTransactionEventsTable().removeRecordsWithCascade("concernedDatabasePackage=:c and timeUTC<=:l", "c", databasePackage, "l", transactionToDeleteUpperLimitUTC);
 					else
-						getDatabaseTransactionEventsTable().removeRecordsWithCascade("concernedDatabasePackage=%c", "c", databasePackage);
+						getDatabaseTransactionEventsTable().removeRecordsWithCascade("concernedDatabasePackage=:c", "c", databasePackage);
 
 					getDatabaseHooksTable().actualizeLastTransactionID(Collections.emptyList());
 
@@ -2201,7 +2200,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 			try {
 				finalizer.lockWrite();
 
-				getDatabaseHooksTable().getRecords(new Filter<Record>() {
+				getDatabaseHooksTable().getRecords(new Filter<>() {
 
 					@Override
 					public boolean nextRecord(Record _record) throws DatabaseException {
@@ -2777,7 +2776,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 			}
 
 			getDatabaseHooksTable()
-					.getRecords(new Filter<Record>() {
+					.getRecords(new Filter<>() {
 						@Override
 						public boolean nextRecord(Record _record) {
 							if (!_record.concernsLocalDatabaseHost()) {
@@ -3368,7 +3367,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 				@Override
 				public Void run() throws Exception {
 					Reference<DatabaseHooksTable.Record> localRecord = new Reference<>(null);
-					getDatabaseHooksTable().updateRecords(new AlterRecordFilter<DatabaseHooksTable.Record>() {
+					getDatabaseHooksTable().updateRecords(new AlterRecordFilter<>() {
 
 						@Override
 						public void nextRecord(DatabaseHooksTable.Record _record) throws DatabaseException {
@@ -3994,7 +3993,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 				throw new NullPointerException("wrapper");
 			if (maxEventsRecords == 0)
 				return false;
-			return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+			return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 
 				@Override
 				public Boolean run() throws Exception {
@@ -4037,7 +4036,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 		}
 	}
 	public static abstract class AbstractDatabaseEventsToSynchronizeP2P extends DatabaseEvent implements P2PBigDatabaseEventToSend, SecureExternalizable {
-		protected transient DatabaseHooksTable.Record hook;
+		transient DatabaseHooksTable.Record hook;
 		protected int hookID;
 		protected DecentralizedValue hostIDSource, hostIDDestination;
 
@@ -4275,6 +4274,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 		private final Set<Table<?>> memoryTablesToRefresh;
 		private final HashMap<Package, BackupRestoreManager.AbstractTransaction> backupManager=new HashMap<>();
 
+		@SuppressWarnings("deprecation")
 		Session(Connection connection, Thread thread) {
 
 			this.connection = connection;
@@ -4303,6 +4303,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 			return connection;
 		}
 
+		@SuppressWarnings("deprecation")
 		boolean isConcernedBy(Thread t) {
 			return threadID == t.getId();
 		}
@@ -4561,13 +4562,13 @@ public abstract class DatabaseWrapper implements Cleanable {
 							if (event.getType()==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 							{
 								nb.addAndGet(-(int) getDatabaseEventsTable()
-										.removeRecordsWithCascade("transaction=%transaction AND concernedTable=%concernedTable",
+										.removeRecordsWithCascade("transaction=:transaction AND concernedTable=:concernedTable",
 												"transaction", transaction.transaction, "concernedTable",
 												eventr.get().getConcernedTable()));
 							}
 							else {
 								nb.addAndGet(-(int) getDatabaseEventsTable()
-										.removeRecordsWithCascade(new Filter<com.distrimind.ood.database.DatabaseEventsTable.Record>() {
+										.removeRecordsWithCascade(new Filter<>() {
 
 																	  @Override
 																	  public boolean nextRecord(
@@ -4589,7 +4590,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 																		  return true;
 																	  }
 
-																  }, "transaction=%transaction AND concernedSerializedPrimaryKey=%pks AND concernedTable=%concernedTable",
+																  }, "transaction=:transaction AND concernedSerializedPrimaryKey=:pks AND concernedTable=:concernedTable",
 												"transaction", transaction.transaction, "pks",
 												eventr.get().getConcernedSerializedPrimaryKey(), "concernedTable",
 												eventr.get().getConcernedTable()));
@@ -4618,7 +4619,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 								parameters.put("t2", DatabaseEventType.REMOVE_WITH_CASCADE.getByte());
 								parameters.put("t3", DatabaseEventType.REMOVE.getByte());
 								nb.addAndGet(-(int) getDatabaseEventsTable()
-										.removeRecordsWithCascade(new Filter<DatabaseEventsTable.Record>() {
+										.removeRecordsWithCascade(new Filter<>() {
 
 											@Override
 											public boolean nextRecord(
@@ -4647,8 +4648,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 																				return true;
 																			}
 																		}
-																	}
-																	else if (fa.getValue(dr)!=null) {
+																	} else if (fa.getValue(dr) != null) {
 																		return true;
 																	}
 																}
@@ -4663,7 +4663,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 											}
 
-										}, "transaction=%transaction" + sb+" and type!=%t1 and type!=%t2 and type!=%t3", parameters));
+										}, "transaction=:transaction" + sb+" and type!=:t1 and type!=:t2 and type!=:t3", parameters));
 							}
 							if (eventr.get() != null) {
 								Set<DecentralizedValue> hosts = event.getHostsDestination();
@@ -4756,7 +4756,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 						alreadyDone=true;
 						for (TransactionPerDatabase t : temporaryTransactions.values()) {
 							int nb = (int) getDatabaseEventsTable().removeRecords(
-									"transaction=%transaction AND position>=%pos", "transaction", t.transaction, "pos",
+									"transaction=:transaction AND position>=:pos", "transaction", t.transaction, "pos",
                                     position);
 							actualTransactionEventsNumber.addAndGet(nb);
 							t.eventsNumber.addAndGet(-nb);
@@ -4822,7 +4822,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 				if (transactionToSynchronize) {
 					if (eventsStoredIntoMemory) {
 
-						res = runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+						res = runSynchronizedTransaction(new SynchronizedTransaction<>() {
 							final boolean alreadyDone = false;
 
 							@Override
@@ -4841,7 +4841,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 										 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
 										 */
 
-										getDatabaseHooksTable().getRecords(new Filter<Record>() {
+										getDatabaseHooksTable().getRecords(new Filter<>() {
 
 											@Override
 											public boolean nextRecord(Record _record)
@@ -4876,8 +4876,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 												return false;
 											}
 										});
-										if (finalTR.get()==null)
-										{
+										if (finalTR.get() == null) {
 											finalTR.set(t.transaction = getDatabaseTransactionEventsTable()
 													.addRecord(new DatabaseTransactionEventsTable.Record(
 															getTransactionIDTable()
@@ -4912,7 +4911,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 					} else {
 
-						res = runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+						res = runSynchronizedTransaction(new SynchronizedTransaction<>() {
 							boolean alreadyDone = false;
 
 							@Override
@@ -4930,7 +4929,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 										 * previousLastTransactionID=getTransactionIDTable().getLastTransactionID();
 										 * final AtomicBoolean hasIgnoredHooks=new AtomicBoolean(false);
 										 */
-										getDatabaseHooksTable().getRecords(new Filter<Record>() {
+										getDatabaseHooksTable().getRecords(new Filter<>() {
 
 											@Override
 											public boolean nextRecord(Record _record)
@@ -4954,14 +4953,14 @@ public abstract class DatabaseWrapper implements Cleanable {
 															final HashMap<String, Object> hm = new HashMap<>();
 															hm.put("transaction", finalTR.get());
 															getDatabaseEventsTable().updateRecords(
-																	new AlterRecordFilter<DatabaseEventsTable.Record>() {
+																	new AlterRecordFilter<>() {
 
 																		@Override
 																		public void nextRecord(
 																				DatabaseEventsTable.Record _record) {
 																			update(hm);
 																		}
-																	}, "transaction=%transaction", "transaction",
+																	}, "transaction=:transaction", "transaction",
 																	t.transaction);
 
 														}
@@ -4977,8 +4976,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 												return false;
 											}
 										});
-										if (finalTR.get()==null)
-										{
+										if (finalTR.get() == null) {
 											DatabaseTransactionEventsTable.Record te;
 											finalTR.set(te = getDatabaseTransactionEventsTable()
 													.addRecord(new DatabaseTransactionEventsTable.Record(
@@ -5118,7 +5116,7 @@ public abstract class DatabaseWrapper implements Cleanable {
 		
 	}
 
-	protected Session getConnectionAssociatedWithCurrentThread() throws DatabaseException {
+	Session getConnectionAssociatedWithCurrentThread() throws DatabaseException {
 		
 		try {
 			finalizer.lockWrite();
@@ -5246,10 +5244,10 @@ public abstract class DatabaseWrapper implements Cleanable {
         }, true);
 	}
 
-	protected abstract void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
+	abstract void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
 			throws SQLException;
 
-	protected void endTransaction(Session _openedConnection) {
+	void endTransaction(Session _openedConnection) {
 
 	}
 
@@ -6708,20 +6706,20 @@ public abstract class DatabaseWrapper implements Cleanable {
 
 	protected abstract boolean doesTableExists(String tableName) throws Exception;
 
-	protected final ColumnsReadQuery getColumnMetaData(String tableName) throws Exception
+	final ColumnsReadQuery getColumnMetaData(String tableName) throws Exception
 	{
 		return getColumnMetaData(tableName, null);
 	}
 
 
-	protected abstract ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception;
+	abstract ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception;
 
 	protected abstract void checkConstraints(Table<?> table) throws DatabaseException;
 
 	protected abstract boolean autoPrimaryKeyIndexStartFromOne();
 
 	public static abstract class TableColumnsResultSet {
-		protected ResultSet resultSet;
+		protected final ResultSet resultSet;
 
 		protected TableColumnsResultSet(ResultSet rs) {
 			resultSet = rs;

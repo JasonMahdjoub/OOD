@@ -28,21 +28,18 @@ public class FileReferenceManager {
 		return fileTable.getRecords("fileReference", fileReference).stream().findAny().orElse(null);
 	}
 	public FileRecord incrementReferenceFile(FileReference fileReference) throws DatabaseException {
-		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<FileRecord>() {
+		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public FileTable.Record run() throws Exception {
-				FileTable.Record r=fileTable.getRecordsWithAllFields("fileReference", fileReference).stream().findAny().orElse(null);
-				if (r==null)
-				{
-					long t=System.currentTimeMillis();
-					r=fileTable.addRecord("fileReference", fileReference,
+				FileTable.Record r = fileTable.getRecordsWithAllFields("fileReference", fileReference).stream().findAny().orElse(null);
+				if (r == null) {
+					long t = System.currentTimeMillis();
+					r = fileTable.addRecord("fileReference", fileReference,
 							"creationDateUTC", t,
 							"lastModificationDateUTC", t,
 							"referenceNumber", 1);
 					r.getFileReference().linkToDatabase(fileTable, r);
-				}
-				else
-				{
+				} else {
 					r.getFileReference().linkToDatabase(fileTable, r);
 					fileTable.updateRecord(r, "referenceNumber", ++r.referenceNumber);
 				}
@@ -60,14 +57,14 @@ public class FileReferenceManager {
 			}
 
 			@Override
-			public void initOrReset()  {
+			public void initOrReset() {
 
 			}
 		});
 
 	}
 	public FileRecord incrementReferenceFile(long fileId) throws DatabaseException {
-		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<FileRecord>() {
+		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public FileTable.Record run() throws Exception {
 				FileTable.Record r = fileTable.getRecord("fileId", fileId);
@@ -99,7 +96,7 @@ public class FileReferenceManager {
 	}
 
 	public FileRecord decrementReferenceFile(FileReference fileReference) throws DatabaseException {
-		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<FileRecord>() {
+		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public FileRecord run() throws Exception {
 				FileTable.Record r = fileTable.getRecordsWithAllFields("fileReference", fileReference).stream().findAny().orElse(null);
@@ -127,7 +124,7 @@ public class FileReferenceManager {
 		});
 	}
 	public FileRecord decrementReferenceFile(long fileId) throws DatabaseException {
-		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<FileRecord>() {
+		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public FileRecord run() throws Exception {
 				FileTable.Record r = fileTable.getRecord("fileId", fileId);
@@ -179,7 +176,7 @@ public class FileReferenceManager {
 	}
 
 	public FileRecord removeFileAndAllItsReferences(FileReference fileReference) throws DatabaseException {
-		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<FileRecord>() {
+		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public FileRecord run() throws Exception {
 				FileTable.Record r = fileTable.getRecordsWithAllFields("fileReference", fileReference).stream().findAny().orElse(null);
@@ -208,7 +205,7 @@ public class FileReferenceManager {
 		});
 	}
 	public FileRecord removeFileAndAllItsReferences(long fileId) throws DatabaseException {
-		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<FileRecord>() {
+		return fileTable.getDatabaseWrapper().runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public FileRecord run() throws Exception {
 				FileTable.Record r = fileTable.getRecord("fileId", fileId);

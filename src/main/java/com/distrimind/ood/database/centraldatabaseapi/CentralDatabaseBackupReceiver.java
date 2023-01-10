@@ -165,13 +165,6 @@ public abstract class CentralDatabaseBackupReceiver {
 
 	}
 
-	/*CentralDatabaseBackupReceiverPerPeer getConnectedIntoThisServer(DecentralizedValue peerID)
-	{
-		CentralDatabaseBackupReceiverPerPeer r=receiversPerPeer.get(peerID);
-		if (r!=null && !r.isConnected())
-			return null;
-		return r;
-	}*/
 
 	public boolean isConnectedIntoOneOfCentralDatabaseBackupServers(DecentralizedValue peerID) throws DatabaseException {
 		return connectedClientsTable.hasRecordsWithAllFields("clientID", peerID);
@@ -263,27 +256,26 @@ public abstract class CentralDatabaseBackupReceiver {
 				long timeReferenceToRemoveObsoleteBackups=System.currentTimeMillis()- getDurationInMsBeforeOrderingDatabaseBackupDeletion();
 				long timeReferenceToRemoveObsoleteAccounts=Math.min(Math.min(System.currentTimeMillis()- getDurationInMsToWaitBeforeRemovingAccountDefinitively(),timeReferenceToRemoveObsoleteHosts), timeReferenceToRemoveObsoleteHosts);
 
-				clientCloudAccountTable.removeRecordsWithCascade("removeAccountQueryUTCInMs is not null and removeAccountQueryUTCInMs<=%t", "t", timeReferenceToRemoveObsoleteAccounts);
-				encryptedBackupPartReferenceTable.removeRecordsWithCascade(new Filter<EncryptedBackupPartReferenceTable.Record>() {
+				clientCloudAccountTable.removeRecordsWithCascade("removeAccountQueryUTCInMs is not null and removeAccountQueryUTCInMs<=:t", "t", timeReferenceToRemoveObsoleteAccounts);
+				encryptedBackupPartReferenceTable.removeRecordsWithCascade(new Filter<>() {
 					@Override
 					public boolean nextRecord(EncryptedBackupPartReferenceTable.Record _record) throws DatabaseException {
 						_record.delete(wrapper);
 						return true;
 					}
-				}, "(database.removeTimeUTC IS NOT NULL AND database.removeTimeUTC<=%ct) OR (database.client.toRemoveOrderTimeUTCInMs IS NOT NULL AND database.client.toRemoveOrderTimeUTCInMs<=%ctc)", "ct", timeReferenceToRemoveObsoleteBackup, "ctc", timeReferenceToRemoveObsoleteHosts);
+				}, "(database.removeTimeUTC IS NOT NULL AND database.removeTimeUTC<=:ct) OR (database.client.toRemoveOrderTimeUTCInMs IS NOT NULL AND database.client.toRemoveOrderTimeUTCInMs<=:ctc)", "ct", timeReferenceToRemoveObsoleteBackup, "ctc", timeReferenceToRemoveObsoleteHosts);
 
-				clientTable.removeRecordsWithCascade("toRemoveOrderTimeUTCInMs IS NOT NULL AND toRemoveOrderTimeUTCInMs<=%ct", "ct", timeReferenceToRemoveObsoleteHosts);
-				databaseBackupPerClientTable.removeRecords("removeTimeUTC IS NOT NULL AND removeTimeUTC<=%ct", "ct", timeReferenceToRemoveObsoleteBackup);
-				databaseBackupPerClientTable.updateRecords(new AlterRecordFilter<DatabaseBackupPerClientTable.Record>() {
+				clientTable.removeRecordsWithCascade("toRemoveOrderTimeUTCInMs IS NOT NULL AND toRemoveOrderTimeUTCInMs<=:ct", "ct", timeReferenceToRemoveObsoleteHosts);
+				databaseBackupPerClientTable.removeRecords("removeTimeUTC IS NOT NULL AND removeTimeUTC<=:ct", "ct", timeReferenceToRemoveObsoleteBackup);
+				databaseBackupPerClientTable.updateRecords(new AlterRecordFilter<>() {
 					@Override
 					public void nextRecord(DatabaseBackupPerClientTable.Record _record) throws DatabaseException {
-						if (encryptedBackupPartReferenceTable.getRecordsNumber("isReferenceFile=%rf and database=%d", "rf", true, "d", _record)>=2)
-						{
+						if (encryptedBackupPartReferenceTable.getRecordsNumber("isReferenceFile=:rf and database=:d", "rf", true, "d", _record) >= 2) {
 							update("removeTimeUTC", System.currentTimeMillis());
 						}
 
 					}
-				},"lastFileBackupPartUTC<=%ct and removeTimeUTC IS NULL", "ct", timeReferenceToRemoveObsoleteBackups);
+				},"lastFileBackupPartUTC<=:ct and removeTimeUTC IS NULL", "ct", timeReferenceToRemoveObsoleteBackups);
 
 				return null;
 			}
@@ -328,7 +320,7 @@ public abstract class CentralDatabaseBackupReceiver {
 		return r;
 	}
 	private boolean removeAccount(Object ... keys) throws DatabaseException {
-		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public Boolean run() throws Exception {
 				List<ClientCloudAccountTable.Record> l=clientCloudAccountTable.getRecordsWithAllFields(keys);
@@ -339,15 +331,15 @@ public abstract class CentralDatabaseBackupReceiver {
 				ClientCloudAccountTable.Record r=l.iterator().next();
 				if (r.getRemoveAccountQueryUTCInMs()==null) {
 					clientCloudAccountTable.updateRecord(r, "removeAccountQueryUTCInMs", System.currentTimeMillis());
-					clientTable.getRecords(new Filter<ClientTable.Record>() {
+					clientTable.getRecords(new Filter<>() {
 						@Override
 						public boolean nextRecord(ClientTable.Record _record) throws DatabaseException {
-							CentralDatabaseBackupReceiverPerPeer c=receiversPerPeer.get(_record.getClientID());
-							if (c!=null)
+							CentralDatabaseBackupReceiverPerPeer c = receiversPerPeer.get(_record.getClientID());
+							if (c != null)
 								c.disconnect();
 							return false;
 						}
-					}, "account=%a", "a", r);
+					}, "account=:a", "a", r);
 
 					return true;
 				}
@@ -372,19 +364,18 @@ public abstract class CentralDatabaseBackupReceiver {
 		});
 	}
 	private boolean cancelRemoveAccount(Object ... keys) throws DatabaseException {
-		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<Boolean>() {
+		return wrapper.runSynchronizedTransaction(new SynchronizedTransaction<>() {
 			@Override
 			public Boolean run() throws Exception {
-				List<ClientCloudAccountTable.Record> l=clientCloudAccountTable.getRecordsWithAllFields(keys);
-				if (l.size()==0)
+				List<ClientCloudAccountTable.Record> l = clientCloudAccountTable.getRecordsWithAllFields(keys);
+				if (l.size() == 0)
 					return false;
-				if (l.size()>1)
+				if (l.size() > 1)
 					throw new IllegalAccessError();
-				ClientCloudAccountTable.Record r=l.iterator().next();
-				if (r.getRemoveAccountQueryUTCInMs()==null) {
+				ClientCloudAccountTable.Record r = l.iterator().next();
+				if (r.getRemoveAccountQueryUTCInMs() == null) {
 					return false;
-				}
-				else {
+				} else {
 					clientCloudAccountTable.updateRecord(r, "removeAccountQueryUTCInMs", null);
 					return true;
 				}
@@ -420,11 +411,11 @@ public abstract class CentralDatabaseBackupReceiver {
 
 		HashMap<DecentralizedValue, byte[]> encryptedCompatibleDatabases=new HashMap<>();
 		parseClients(clientRecord,
-				new Filter<ClientTable.Record>(){
+				new Filter<>() {
 
 					@Override
 					public boolean nextRecord(ClientTable.Record _record) {
-						if (_record.getEncryptedCompatiblesDatabases()!=null)
+						if (_record.getEncryptedCompatiblesDatabases() != null)
 							encryptedCompatibleDatabases.put(_record.getClientID(), _record.getEncryptedCompatiblesDatabases());
 						return false;
 					}
@@ -448,7 +439,7 @@ public abstract class CentralDatabaseBackupReceiver {
 
 	private Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> getLastValidatedAndEncryptedIDsPerHost(ClientTable.Record fromClient) throws DatabaseException {
 		Map<DecentralizedValue, LastValidatedLocalAndDistantEncryptedID> lastValidatedAndEncryptedIDsPerHost=new HashMap<>();
-		parseClients(fromClient, new Filter<ClientTable.Record>() {
+		parseClients(fromClient, new Filter<>() {
 			@Override
 			public boolean nextRecord(ClientTable.Record r) throws DatabaseException {
 				lastValidatedAndEncryptedIDsPerHost.put(r.getClientID(), new LastValidatedLocalAndDistantEncryptedID(getLastValidatedAndEncryptedDistantID(r, fromClient), getLastValidatedAndEncryptedDistantIDPerDatabase(r)));
@@ -467,30 +458,30 @@ public abstract class CentralDatabaseBackupReceiver {
 	}
 	Map<String, byte[]> getLastValidatedAndEncryptedDistantIDPerDatabase(ClientTable.Record client) throws DatabaseException {
 		HashMap<String, byte[]> res=new HashMap<>();
-		databaseBackupPerClientTable.getRecords(new Filter<DatabaseBackupPerClientTable.Record>(){
+		databaseBackupPerClientTable.getRecords(new Filter<>() {
 			@Override
 			public boolean nextRecord(DatabaseBackupPerClientTable.Record _record) {
 				res.put(_record.getPackageString(), _record.getLastValidatedAndEncryptedID());
 				return false;
 			}
-		}, "client=%c", "c", client);
+		}, "client=:c", "c", client);
 		return res;
 	}
 
 	Map<String, Long> getLastValidatedTransactionsUTCForDestinationHost(ClientTable.Record client) throws DatabaseException {
 		Map<String, Long> lastValidatedTransactionsUTCForDestinationHost=new HashMap<>();
-		databaseBackupPerClientTable.getRecords(new Filter<DatabaseBackupPerClientTable.Record>() {
+		databaseBackupPerClientTable.getRecords(new Filter<>() {
 			@Override
-			public boolean nextRecord(DatabaseBackupPerClientTable.Record _record)  {
+			public boolean nextRecord(DatabaseBackupPerClientTable.Record _record) {
 				lastValidatedTransactionsUTCForDestinationHost.put(_record.getPackageString(), _record.getLastFileBackupPartUTC());
 				return false;
 			}
-		},"client=%c", "c", client);
+		},"client=:c", "c", client);
 		return lastValidatedTransactionsUTCForDestinationHost;
 	}
 
 	void parseClients(ClientTable.Record clientRecord, Filter<ClientTable.Record> f, DecentralizedValue exceptThisClientID, boolean parseDisconnectedClients) throws DatabaseException {
-		Filter<ClientTable.Record> filter=new Filter<ClientTable.Record>() {
+		Filter<ClientTable.Record> filter= new Filter<>() {
 			@Override
 			public boolean nextRecord(ClientTable.Record _record) throws DatabaseException {
 				if (parseDisconnectedClients || isConnectedIntoOneOfCentralDatabaseBackupServers(_record.getClientID()))
@@ -499,9 +490,9 @@ public abstract class CentralDatabaseBackupReceiver {
 			}
 		};
 		if (exceptThisClientID==null)
-			clientTable.getRecords(filter, "account=%a and toRemoveOrderTimeUTCInMs is null", "a", clientRecord.getAccount());
+			clientTable.getRecords(filter, "account=:a and toRemoveOrderTimeUTCInMs is null", "a", clientRecord.getAccount());
 		else
-			clientTable.getRecords(filter, "account=%a and toRemoveOrderTimeUTCInMs is null and clientID!=%c", "a", clientRecord.getAccount(), "c", exceptThisClientID);
+			clientTable.getRecords(filter, "account=:a and toRemoveOrderTimeUTCInMs is null and clientID!=:c", "a", clientRecord.getAccount(), "c", exceptThisClientID);
 
 	}
 

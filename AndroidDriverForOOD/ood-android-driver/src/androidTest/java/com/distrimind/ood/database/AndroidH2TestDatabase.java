@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.sql.SQLException;
+import java.util.Objects;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -58,8 +59,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 public class AndroidH2TestDatabase extends AbstractAndroidTestDatabase<EmbeddedH2DatabaseWrapper> {
     private final InFileEmbeddedAndroidH2DatabaseFactory factoryA, factoryB;
     public AndroidH2TestDatabase() throws DatabaseException, NoSuchAlgorithmException, NoSuchProviderException {
-        factoryA=new InFileEmbeddedAndroidH2DatabaseFactory( StorageList.class.getPackage().getName()+".test", "androidDBTestA",false);
-        factoryB=new InFileEmbeddedAndroidH2DatabaseFactory( StorageList.class.getPackage().getName()+".test", "androidDBTestB",false);
+        factoryA=new InFileEmbeddedAndroidH2DatabaseFactory( Objects.requireNonNull(StorageList.class.getPackage()).getName()+".test", "androidDBTestA",false);
+        factoryB=new InFileEmbeddedAndroidH2DatabaseFactory( Objects.requireNonNull(StorageList.class.getPackage()).getName()+".test", "androidDBTestB",false);
     }
 
     @Override

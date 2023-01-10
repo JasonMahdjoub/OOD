@@ -395,7 +395,7 @@ final class DatabaseEventsTable extends Table<DatabaseEventsTable.Record> {
 
 	}
 
-	protected DatabaseEventsTable() throws DatabaseException {
+	DatabaseEventsTable() throws DatabaseException {
 		super();
 	}
 

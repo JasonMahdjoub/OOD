@@ -158,9 +158,9 @@ public class charFieldAccessor extends FieldAccessor {
 			Character c = null;
 			if (s != null)
 				c = s.charAt(0);
-			if (c == null && isNotNull())
+			if (c == null)
 				throw new DatabaseIntegrityException("Unexpected exception.");
-			//noinspection ConstantConditions
+
 			field.setChar(_class_instance, c);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);

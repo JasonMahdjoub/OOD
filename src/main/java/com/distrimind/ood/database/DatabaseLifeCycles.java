@@ -47,10 +47,8 @@ public interface DatabaseLifeCycles {
 
 	/**
 	 * This function is called when the database was created and need to transfer
-	 * data from old database. If old database does not exists, this function will
+	 * data from old database. If old database does not exist, this function will
 	 * not be called.
-	 *
-	 *
 	 *
 	 * @param wrapper the database wrapper
 	 * @param newDatabaseConfiguration
@@ -104,11 +102,11 @@ public interface DatabaseLifeCycles {
 
 
 	/**
-	 * This function is call to know if OOD must create a new backup reference which can take lot of time
+	 * This function is call to know if OOD must create a new backup reference which can take a lot of time
 	 * according the quantity of data into the database
 	 * @param backupConfiguration the current backup configuration
 	 * @param lastBackupReferenceTimeUTC the last backup reference time UTC
-	 * @return true if OOD must create a new backup reference which can take lot of time
+	 * @return true if OOD must create a new backup reference which can take a lot of time
 	 */
 	default boolean mustCreateNewBackupReference(BackupConfiguration backupConfiguration, long lastBackupReferenceTimeUTC)
 	{

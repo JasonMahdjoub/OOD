@@ -40,6 +40,7 @@ import com.distrimind.ood.database.exceptions.IncompatibleFieldDatabaseException
 import com.distrimind.util.crypto.WrappedEncryptedASymmetricPrivateKey;
 import com.distrimind.util.crypto.WrappedEncryptedSymmetricSecretKey;
 import com.distrimind.util.crypto.WrappedHashedPassword;
+import com.distrimind.util.crypto.WrappedHashedValue;
 import com.distrimind.util.data_buffers.WrappedData;
 import com.distrimind.util.data_buffers.WrappedSecretData;
 import com.distrimind.util.io.SerializationTools;
@@ -104,6 +105,10 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 			{
 				return new File(new String(_bytesTab, StandardCharsets.UTF_8));
 			}
+			else if (WrappedHashedValue.class.isAssignableFrom(_object_type))
+			{
+				return WrappedHashedValue.fromEncodedArray(_bytesTab);
+			}
 			else if (WrappedEncryptedASymmetricPrivateKey.class.isAssignableFrom(_object_type))
 			{
 				return new WrappedEncryptedASymmetricPrivateKey(_bytesTab);
@@ -155,6 +160,10 @@ public class DefaultByteTabObjectConverter extends ByteTabObjectConverter {
 		else if (File.class.isAssignableFrom(_object_type))
 		{
 			return 16384;
+		}
+		else if (WrappedHashedValue.class.isAssignableFrom(_object_type))
+		{
+			return WrappedHashedValue.MAX_SIZE_IN_BYTES_OF_HASHED_VALUE;
 		}
 		else if (WrappedEncryptedASymmetricPrivateKey.class.isAssignableFrom(_object_type))
 		{

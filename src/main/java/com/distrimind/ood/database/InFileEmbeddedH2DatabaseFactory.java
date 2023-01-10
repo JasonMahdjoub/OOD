@@ -68,7 +68,7 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 * @param databaseConfigurations the database configurations
 	 * @param _directory_name
 	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
+	 *            exist, it will be automatically created with the correspondent
 	 *            database.
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
@@ -83,7 +83,7 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 *
 	 * @param _directory_name
 	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
+	 *            exist, it will be automatically created with the correspondent
 	 *            database.
 	 * @throws NullPointerException
 	 *             if parameters are null pointers.
@@ -100,7 +100,7 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 * @param databaseConfigurations the database configurations
 	 * @param _directory_name
 	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
+	 *            exist, it will be automatically created with the correspondent
 	 *            database.
 	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
 	 * @throws NullPointerException
@@ -118,7 +118,7 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 *
 	 * @param _directory_name
 	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
+	 *            exist, it will be automatically created with the correspondent
 	 *            database.
 	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
 	 * @throws NullPointerException
@@ -136,7 +136,7 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 * @param databaseConfigurations the database configurations
 	 * @param _directory_name
 	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
+	 *            exist, it will be automatically created with the correspondent
 	 *            database.
 	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
 	 * @param fileLock true if the database file must be locked when opened
@@ -161,7 +161,7 @@ public class InFileEmbeddedH2DatabaseFactory extends DatabaseFactory<EmbeddedH2D
 	 *
 	 * @param _directory_name
 	 *            The directory which contains the database. If this directory does not
-	 *            exists, it will be automatically created with the correspondent
+	 *            exist, it will be automatically created with the correspondent
 	 *            database.
 	 * @param alwaysDisconnectAfterOneTransaction true if the database must always be connected and detected during one transaction
 	 * @param fileLock true if the database file must be locked when opened

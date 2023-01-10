@@ -47,7 +47,7 @@ import java.util.*;
  */
 public class DatabaseBackupMetaData implements Iterable<DatabaseBackupMetaDataPerFile>, SecureExternalizable {
 	public static final int MAX_BLOCK_CHAIN_LENGTH_IN_BYTES=80484736;
-	public static int MAX_INCREMENTAL_FILES=MAX_BLOCK_CHAIN_LENGTH_IN_BYTES/(44+64);
+	public static final int MAX_INCREMENTAL_FILES=MAX_BLOCK_CHAIN_LENGTH_IN_BYTES/(44+64);
 	final List<DatabaseBackupMetaDataPerFile> metaDataPerFiles;
 	@SuppressWarnings("unused")
 	DatabaseBackupMetaData()

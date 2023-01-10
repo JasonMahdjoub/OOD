@@ -662,7 +662,7 @@ public abstract class CommonDecentralizedTests {
 
 		@Override
 		public long getDurationInMsBeforeRemovingDatabaseBackupAfterAnDeletionOrder() {
-			return 1000;
+			return 1200;
 		}
 
 		@Override
@@ -672,7 +672,7 @@ public abstract class CommonDecentralizedTests {
 
 		@Override
 		public long getDurationInMsThatPermitToCancelPeerRemovingWhenThePeerIsTryingToReconnect() {
-			return 1000;
+			return 1200;
 		}
 
 		@Override
@@ -1378,7 +1378,7 @@ public abstract class CommonDecentralizedTests {
 					DatabaseBackupPerClientTable databaseBackupPerClientTable=centralDatabaseBackupDatabase.getTableInstance(DatabaseBackupPerClientTable.class);
 					DatabaseBackupPerClientTable.Record databaseRecord=databaseBackupPerClientTable.getRecord("client", clientRecord, "packageString", dc.getDatabaseSchema().getPackage().getName());
 					if (databaseRecord!=null) {
-						List<EncryptedBackupPartReferenceTable.Record> records = centralDatabaseBackupDatabase.getTableInstance(EncryptedBackupPartReferenceTable.class).getRecords("database=%db", "db", databaseRecord);
+						List<EncryptedBackupPartReferenceTable.Record> records = centralDatabaseBackupDatabase.getTableInstance(EncryptedBackupPartReferenceTable.class).getRecords("database=:db", "db", databaseRecord);
 						List<Long> list = brm.getFinalTimestamps();
 						for (int i=0;i<list.size();i++) {
 							long l=list.get(i);
@@ -1904,6 +1904,7 @@ public abstract class CommonDecentralizedTests {
 		testSynchronisation();
 		if (centralDatabaseBackupReceiver!=null)
 			cleanObsoleteData(centralDatabaseBackupReceiver);
+
 	}
 
 	protected void cleanObsoleteData(com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupReceiver receiver) throws DatabaseException {
@@ -1911,7 +1912,7 @@ public abstract class CommonDecentralizedTests {
 			Method cleanObsoleteDataMethod=com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupReceiver.class.getDeclaredMethod("cleanObsoleteData");
 			cleanObsoleteDataMethod.setAccessible(true);
 			cleanObsoleteDataMethod.invoke(receiver);
-		} catch (NoSuchMethodException | IllegalAccessException e) {
+		} catch (NoSuchMethodException | IllegalAccessException  e) {
 			throw new RuntimeException(e);
 		}
 		catch (InvocationTargetException e)

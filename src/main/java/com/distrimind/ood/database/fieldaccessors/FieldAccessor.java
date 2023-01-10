@@ -470,23 +470,23 @@ public abstract class FieldAccessor {
 						res.add(new ForeignKeyFieldAccessor(_table, _sql_connection, f, null, severalPrimaryKeysPresentIntoTable));
 					} else {
 						ByteTabObjectConverter converter;
-						if (type.equals(boolean.class))
+						if (type==boolean.class)
 							res.add(new booleanFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(byte.class))
+						else if (type==byte.class)
 							res.add(new byteFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(short.class))
+						else if (type==short.class)
 							res.add(new shortFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(char.class))
+						else if (type==char.class)
 							res.add(new charFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(int.class))
+						else if (type==int.class)
 							res.add(new intFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(long.class))
+						else if (type==long.class)
 							res.add(new longFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(float.class))
+						else if (type==float.class)
 							res.add(new floatFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(double.class))
+						else if (type==double.class)
 							res.add(new doubleFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(String.class) || WrappedString.class.isAssignableFrom(type))
+						else if (type==String.class || type==StringBuffer.class || type==StringBuilder.class || WrappedString.class.isAssignableFrom(type))
 							res.add(new StringFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						/*else if (type.equals(ASymmetricPublicKey.class) || type.equals(ASymmetricPrivateKey.class) || type.equals(SymmetricSecretKey.class))
 						{
@@ -495,33 +495,33 @@ public abstract class FieldAccessor {
 
 						else if (type.equals(class_array_byte))
 							res.add(new ByteTabFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(Boolean.class))
+						else if (type==Boolean.class)
 							res.add(new BooleanNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(Byte.class))
+						else if (type==Byte.class)
 							res.add(new ByteNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(Short.class))
+						else if (type==Short.class)
 							res.add(new ShortNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(Character.class))
+						else if (type==Character.class)
 							res.add(new CharacterNumberFieldAccessor(_table, _sql_connection, f,
 									parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(Integer.class))
+						else if (type==Integer.class)
 							res.add(new IntegerNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(Long.class))
+						else if (type==Long.class)
 							res.add(new LongNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(Float.class))
+						else if (type==Float.class)
 							res.add(new FloatNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(Double.class))
+						else if (type==Double.class)
 							res.add(new DoubleNumberFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(BigDecimal.class))
+						else if (type==BigDecimal.class)
 							res.add(new BigDecimalFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(BigInteger.class))
+						else if (type==BigInteger.class)
 							res.add(new BigIntegerFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (Date.class.isAssignableFrom(type))
 							res.add(new DateFieldAccessor(_table, _sql_connection, f, parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (type.equals(DecentralizedIDGenerator.class))
 							res.add(new DecentralizedIDFieldAccessor(_table, _sql_connection, f,
 									parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(RenforcedDecentralizedIDGenerator.class))
+						else if (type==RenforcedDecentralizedIDGenerator.class)
 							res.add(new ReinforcedDecentralizedIDFieldAccessor(_table, _sql_connection, f,
 									parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (AbstractDecentralizedID.class.isAssignableFrom(type))
@@ -530,7 +530,7 @@ public abstract class FieldAccessor {
 						else if (Calendar.class.isAssignableFrom(type))
 							res.add(new CalendarFieldAccessor(_table, _sql_connection, f,
 									parentFieldName, severalPrimaryKeysPresentIntoTable));
-						else if (type.equals(UUID.class))
+						else if (type==UUID.class)
 							res.add(new UUIDFieldAccessor(_table, _sql_connection, f,
 									parentFieldName, severalPrimaryKeysPresentIntoTable));
 						else if (DecentralizedValue.class.isAssignableFrom(type) )
@@ -617,7 +617,7 @@ public abstract class FieldAccessor {
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private static boolean checkCircularityWithNotNullForeignKeys(Class<?> _original_class,
-																  List<Class<?>> _list_classes, Class<?> _new_class) throws PrivilegedActionException {
+																  List<Class<?>> _list_classes, Class<?> _new_class)  {
 		if (_original_class.equals(_new_class))
 			return false;
 		if (_list_classes.contains(_new_class))
@@ -663,7 +663,7 @@ public abstract class FieldAccessor {
 
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	private static boolean checkCircularityWithPrimaryForeignKeys(Class<?> _original_class,
-																  List<Class<?>> _list_classes, Class<?> _new_class) throws PrivilegedActionException {
+																  List<Class<?>> _list_classes, Class<?> _new_class)  {
 		if (_original_class.equals(_new_class))
 			return false;
 		if (_list_classes.contains(_new_class))

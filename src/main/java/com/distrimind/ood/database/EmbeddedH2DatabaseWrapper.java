@@ -84,10 +84,8 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 			if (!deepClose || databaseShutdown.getAndSet(true)) {
 				connection.close();
 			} else {
-				try (Statement s = connection.createStatement()) {
+				try (connection; Statement s = connection.createStatement()) {
 					s.execute("SHUTDOWN;");
-				} finally {
-					connection.close();
 				}
 			}
 
@@ -178,7 +176,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 				try {
 					UtilClassLoader.getLoader().loadClass("org.h2.Driver");
 
-					//noinspection SingleStatementInBlock,unchecked
+					//noinspection unchecked
 					H2BlobConstructor=(Constructor<? extends Blob>)UtilClassLoader.getLoader().loadClass("org.h2.jdbc.JdbcBlob").getDeclaredConstructor(UtilClassLoader.getLoader().loadClass("org.h2.jdbc.JdbcConnection"), UtilClassLoader.getLoader().loadClass("org.h2.value.Value"), UtilClassLoader.getLoader().loadClass("org.h2.jdbc.JdbcLob$State"), int.class);
 					H2ValueMethod=UtilClassLoader.getLoader().loadClass("org.h2.value.ValueVarbinary").getDeclaredMethod("get", byte[].class);
 					//DbBackupMain=UtilClassLoader.getLoader().loadClass("org.hsqldb.lib.tar.DbBackupMain").getDeclaredMethod("main", (new String[0]).getClass());
@@ -560,7 +558,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 		}
 	}
 	@Override
-	protected void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
+	void startTransaction(Session _openedConnection, TransactionIsolation transactionIsolation, boolean write)
 			throws SQLException {
 		String isoLevel;
 		switch (transactionIsolation) {
@@ -612,7 +610,7 @@ public class EmbeddedH2DatabaseWrapper extends CommonHSQLH2DatabaseWrapper{
 	}
 
 	@Override
-	protected Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
+	Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection sql_connection = getConnectionAssociatedWithCurrentThread().getConnection();
 		return new CReadQuery(sql_connection, new Table.SqlQuery(
 				"SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, IS_IDENTITY, ORDINAL_POSITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='"

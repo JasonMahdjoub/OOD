@@ -56,7 +56,7 @@ import java.util.NoSuchElementException;
 final class DatabaseDistantEventsTable extends Table<DatabaseDistantEventsTable.Record> {
 	//static final int EVENT_MAX_SIZE_BYTES = DatabaseEventsTable.EVENT_MAX_SIZE_BYTES;
 
-	protected DatabaseDistantEventsTable() throws DatabaseException {
+	DatabaseDistantEventsTable() throws DatabaseException {
 		super();
 	}
 

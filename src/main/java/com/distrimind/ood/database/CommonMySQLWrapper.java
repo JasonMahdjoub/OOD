@@ -166,7 +166,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 
 
 	@Override
-	protected void startTransaction(DatabaseWrapper.Session _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException {
+	void startTransaction(DatabaseWrapper.Session _openedConnection, TransactionIsolation transactionIsolation, boolean write) throws SQLException {
 		//_openedConnection.getConnection().setReadOnly(!write);
 		//noinspection MagicConstant
 		_openedConnection.getConnection().setTransactionIsolation(transactionIsolation.getCode());
@@ -293,7 +293,7 @@ public abstract class CommonMySQLWrapper extends DatabaseWrapper{
 	}
 
 	@Override
-	protected Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
+	Table.ColumnsReadQuery getColumnMetaData(String tableName, String columnName) throws Exception {
 		Connection c;
 		ResultSet rs=(c=getConnectionAssociatedWithCurrentThread().getConnection()).getMetaData().getColumns(finalizer.databaseName, null, tableName, columnName);
 		return new CReadQuery(c, rs);

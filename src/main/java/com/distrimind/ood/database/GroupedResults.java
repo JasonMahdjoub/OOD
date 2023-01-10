@@ -48,7 +48,7 @@ import java.util.HashMap;
 /**
  * This class enables to group results according given table fields. It is
  * equivalent to the function "GROUP BY" in the SQL language.
- * 
+ * <br>
  * To get an instance of this class, call the functions
  * {@link com.distrimind.ood.database.Table#getGroupedResults(String...)} or
  * {@link com.distrimind.ood.database.Table#getGroupedResults(Collection, String...)}.
@@ -88,8 +88,8 @@ public final class GroupedResults<T extends DatabaseRecord> {
 
 	}
 
-	protected final Table<T> table;
-	protected final ArrayList<Field> group_definition = new ArrayList<>();
+	final Table<T> table;
+	final ArrayList<Field> group_definition = new ArrayList<>();
 	private final ArrayList<Group> groups = new ArrayList<>();
 
 	@SuppressWarnings("unchecked")

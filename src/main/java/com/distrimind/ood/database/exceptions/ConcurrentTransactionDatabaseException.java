@@ -38,7 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.exceptions;
 
 /**
- * This exception is generated when the user attempt to access in an nested way,
+ * This exception is generated when the user attempt to access in a nested way,
  * two functions of the database. It is not generated when two threads access to
  * the database. Typically, this exception occurs in some cases when the user
  * call a database function into the classes

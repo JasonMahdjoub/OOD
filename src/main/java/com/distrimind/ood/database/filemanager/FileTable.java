@@ -8,7 +8,7 @@ import com.distrimind.ood.database.exceptions.DatabaseException;
  * @version 1.0
  * @since OOD 3.1.0
  */
-final class FileTable extends Table<FileTable.Record> {
+public final class FileTable extends Table<FileTable.Record> {
 	@SuppressWarnings("ProtectedMemberInFinalClass")
 	protected FileTable() throws DatabaseException {
 	}

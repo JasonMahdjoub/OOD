@@ -62,28 +62,28 @@ final class ExecutedTasksTable extends Table<ExecutedTasksTable.Record> {
 
 
 
+		@SuppressWarnings({"FieldCanBeLocal", "unused"})
 		@PrimaryKey
-		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
 		@NotNull
 		private Class<? extends Table<?>> tableClass;
 
 		@PrimaryKey
-		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
+		@SuppressWarnings({"FieldCanBeLocal", "unused"})
 		private int annotationPosition;
 		@PrimaryKey
 		@NotNull
-		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
+		@SuppressWarnings({"FieldCanBeLocal", "unused"})
 		private Class<? extends ITaskStrategy> strategyClass;
 
 		@Field
 		private long lastExecutionTimeUTC;
 
-		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
+		@SuppressWarnings({"FieldCanBeLocal", "unused", "FieldMayBeFinal"})
 		@Field
 		private boolean toRemove=false;
 
 		@Field(limit = SerializationTools.MAX_CLASS_LENGTH)
-		@SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal", "unused"})
+		@SuppressWarnings({"FieldCanBeLocal", "unused"})
 		@NotNull
 		private String databasePackageName;
 		Record(Table<?> table, int annotationPosition, Class<? extends ITaskStrategy> strategyClass) {
