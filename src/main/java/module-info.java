@@ -35,7 +35,8 @@ knowledge of the CeCILL-C license and that you accept its terms.
  */
 module com.distrimind.ood {
 	requires transitive com.distrimind.util;
-	requires transitive java.sql;
+
+	requires java.sql;
 	exports com.distrimind.ood;
 	exports com.distrimind.ood.i18n;
 	exports com.distrimind.ood.database;
