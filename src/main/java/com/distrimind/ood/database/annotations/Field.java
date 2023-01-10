@@ -112,4 +112,10 @@ public @interface Field {
 	 * @return true if the field must use blob type, even if the size limit is lower than the database threshold
 	 */
 	boolean forceUsingBlobOrClob() default false;
+
+	/**
+	 *
+	 * @return a regex pattern as a constraint to check when altering the concerned field
+	 */
+	String regexPattern() default "";
 }

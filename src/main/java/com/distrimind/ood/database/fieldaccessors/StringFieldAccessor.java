@@ -38,6 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.fieldaccessors;
 
 import com.distrimind.ood.database.*;
+import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
@@ -55,15 +56,18 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * String field accessor
  * @author Jason Mahdjoub
- * @version 1.2
+ * @version 1.3
  * @since OOD 1.0
  */
-public class StringFieldAccessor extends FieldAccessor {
+public class StringFieldAccessor extends FieldAccessor implements FieldAccessorWithStringPattern {
 	protected final SqlField[] sql_fields;
+	private final Pattern pattern;
+	private final String stringPattern;
 
 	public static final long defaultStringLengthLimit=ByteTabFieldAccessor.defaultByteTabSize;
 
@@ -101,6 +105,15 @@ public class StringFieldAccessor extends FieldAccessor {
 						? "VARCHAR(" + l + ")"
 						:DatabaseWrapperAccessor.getTextType(sql_connection, l),
 				isNotNull());
+		com.distrimind.ood.database.annotations.Field a=_field.getAnnotation(com.distrimind.ood.database.annotations.Field.class);
+		if (a==null || a.regexPattern()==null || a.regexPattern().isEmpty()) {
+			pattern = null;
+			stringPattern = "";
+		}
+		else {
+			stringPattern=a.regexPattern();
+			pattern=Pattern.compile(stringPattern);
+		}
 	}
 
 	@Override
@@ -125,36 +138,26 @@ public class StringFieldAccessor extends FieldAccessor {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
+
 	@SuppressWarnings("deprecation")
-	private Object toObject(Object _field_instance) throws InvalidEncodedValue {
-		if (WrappedString.class.isAssignableFrom(field.getType()) && _field_instance instanceof String)
-		{
-			if (WrappedEncryptedASymmetricPrivateKeyString.class.isAssignableFrom(field.getType()))
-			{
-				_field_instance=new WrappedEncryptedASymmetricPrivateKeyString((String)_field_instance);
-			}
-			else if (WrappedHashedValueInBase64StringFormat.class.isAssignableFrom(field.getType()))
-			{
-				_field_instance=new WrappedHashedValueInBase64StringFormat((String)_field_instance);
-			}
-			else if (WrappedEncryptedSymmetricSecretKeyString.class.isAssignableFrom(field.getType()))
-			{
-				_field_instance=new WrappedEncryptedSymmetricSecretKeyString((String)_field_instance);
-			}
-			else if (WrappedHashedPasswordString.class.isAssignableFrom(field.getType()))
-			{
-				_field_instance=new WrappedHashedPasswordString((String)_field_instance);
-			}
-			else if (WrappedPassword.class.isAssignableFrom(field.getType()))
-			{
-				_field_instance=new WrappedPassword((String)_field_instance);
-			}
-			else if (WrappedSecretString.class.isAssignableFrom(field.getType()))
-			{
-				_field_instance=new WrappedSecretString((String)_field_instance);
-			}
-			else
-				_field_instance=new WrappedString((String)_field_instance);
+	private Object toObject(Object _field_instance) throws InvalidEncodedValue, ConstraintsNotRespectedDatabaseException {
+		checkPattern(_field_instance);
+		if (WrappedString.class.isAssignableFrom(field.getType()) && _field_instance instanceof String) {
+			String s = (String) _field_instance;
+			if (WrappedEncryptedASymmetricPrivateKeyString.class.isAssignableFrom(field.getType())) {
+				_field_instance = new WrappedEncryptedASymmetricPrivateKeyString(s);
+			} else if (WrappedHashedValueInBase64StringFormat.class.isAssignableFrom(field.getType())) {
+				_field_instance = new WrappedHashedValueInBase64StringFormat(s);
+			} else if (WrappedEncryptedSymmetricSecretKeyString.class.isAssignableFrom(field.getType())) {
+				_field_instance = new WrappedEncryptedSymmetricSecretKeyString(s);
+			} else if (WrappedHashedPasswordString.class.isAssignableFrom(field.getType())) {
+				_field_instance = new WrappedHashedPasswordString(s);
+			} else if (WrappedPassword.class.isAssignableFrom(field.getType())) {
+				_field_instance = new WrappedPassword(s);
+			} else if (WrappedSecretString.class.isAssignableFrom(field.getType())) {
+				_field_instance = new WrappedSecretString(s);
+			} else
+				_field_instance = new WrappedString(s);
 		}
 		return _field_instance;
 	}
@@ -324,6 +327,7 @@ public class StringFieldAccessor extends FieldAccessor {
 				s=o.toString();
 			else if (o!=null)
 				s=(String)o;
+			checkPattern(s);
 			_prepared_statement.setString(_field_start, s);
 		} catch (Exception e) {
 			throw DatabaseException.getDatabaseException(e);
@@ -391,4 +395,27 @@ public class StringFieldAccessor extends FieldAccessor {
 		return o;
 	}
 
+
+
+	@Override
+	public void checkPattern(Object value) throws ConstraintsNotRespectedDatabaseException, InvalidEncodedValue {
+		CharSequence s;
+		if (value instanceof CharSequence)
+			s=(CharSequence)value;
+		else if (value instanceof WrappedString)
+			s=((WrappedString)value).toStringBuilder();
+		else
+			throw new InvalidEncodedValue();
+		if (pattern != null) {
+			synchronized (pattern) {
+				if (!pattern.matcher(s).matches())
+					throw new ConstraintsNotRespectedDatabaseException("Pattern "+stringPattern+" is not validated with string "+s);
+			}
+		}
+	}
+
+	@Override
+	public String getStringPattern() {
+		return stringPattern;
+	}
 }

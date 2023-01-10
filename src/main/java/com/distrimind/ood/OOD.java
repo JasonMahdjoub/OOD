@@ -65,10 +65,11 @@ public class OOD {
 			VERSION.addCreator(new Person("mahdjoub", "jason"))
 					.addDeveloper(new PersonDeveloper("mahdjoub", "jason", "2013-04-01"))
 					.addDescription(
-							new Description(3, 2, 2, Version.Type.STABLE, 0, "2023-01-10")
+							new Description(3, 3, 0, Version.Type.STABLE, 0, "2023-01-10")
 									.addItem(INTERNAL_CHANGE, "Update Java language level to Java 11")
 									.addItem(INTERNAL_CHANGE, "Update Utils to 5.25.1 STABLE")
 									.addItem(NEW_FEATURE, "Add serialization of hashed values")
+									.addItem(NEW_FEATURE, "Add possibility to check string regex patterns with table fields. See annotation Field.")
 					)
 					.addDescription(
 							new Description(3, 2, 1, Version.Type.STABLE, 0, "2022-12-23")
