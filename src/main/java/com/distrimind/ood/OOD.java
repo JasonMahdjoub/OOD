@@ -67,9 +67,10 @@ public class OOD {
 					.addDescription(
 							new Description(3, 3, 0, Version.Type.STABLE, 0, "2023-01-10")
 									.addItem(INTERNAL_CHANGE, "Update Java language level to Java 11")
-									.addItem(INTERNAL_CHANGE, "Update Utils to 5.25.1 STABLE")
+									.addItem(INTERNAL_CHANGE, "Update Utils to 5.25.2 STABLE")
 									.addItem(NEW_FEATURE, "Add serialization of hashed values")
 									.addItem(NEW_FEATURE, "Add possibility to check string regex patterns with table fields. See annotation Field.")
+									.addItem(NEW_FEATURE, "Manage StringBuilder and StringBuffer types.")
 					)
 					.addDescription(
 							new Description(3, 2, 1, Version.Type.STABLE, 0, "2022-12-23")
