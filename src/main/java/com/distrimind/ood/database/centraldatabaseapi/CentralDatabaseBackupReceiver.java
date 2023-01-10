@@ -275,7 +275,7 @@ public abstract class CentralDatabaseBackupReceiver {
 						}
 
 					}
-				},"lastFileBackupPartUTC<=%ct and removeTimeUTC IS NULL", "ct", timeReferenceToRemoveObsoleteBackups);
+				},"lastFileBackupPartUTC<=:ct and removeTimeUTC IS NULL", "ct", timeReferenceToRemoveObsoleteBackups);
 
 				return null;
 			}

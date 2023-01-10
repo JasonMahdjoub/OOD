@@ -1,6 +1,6 @@
 Object Oriented Database
 ========================
-3.2.1 STABLE (Build: 6107) (from 01/04/2013 to 23/12/2022)
+3.3.0 STABLE (Build: 6141) (from 01/04/2013 to 10/01/2023)
 
 # Creator(s):
 * Jason MAHDJOUB
@@ -9,6 +9,16 @@ Object Oriented Database
 * Jason MAHDJOUB (Entered in the team at 01/04/2013)
 
 # Changes:
+
+
+### 3.3.0 STABLE (10/01/2023)
+#### New feature(s)
+* Add serialization of hashed values
+* Add possibility to check string regex patterns with table fields. See annotation Field.
+* Manage StringBuilder and StringBuffer types.
+#### Internal change(s)
+* Update Java language level to Java 11
+* Update Utils to 5.25.2 STABLE
 
 
 ### 3.2.1 STABLE (23/12/2022)

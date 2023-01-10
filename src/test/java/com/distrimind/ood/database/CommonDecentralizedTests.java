@@ -662,7 +662,7 @@ public abstract class CommonDecentralizedTests {
 
 		@Override
 		public long getDurationInMsBeforeRemovingDatabaseBackupAfterAnDeletionOrder() {
-			return 1000;
+			return 1200;
 		}
 
 		@Override
@@ -672,7 +672,7 @@ public abstract class CommonDecentralizedTests {
 
 		@Override
 		public long getDurationInMsThatPermitToCancelPeerRemovingWhenThePeerIsTryingToReconnect() {
-			return 1000;
+			return 1200;
 		}
 
 		@Override
@@ -1900,7 +1900,7 @@ public abstract class CommonDecentralizedTests {
 	}
 
 	@Test(dependsOnMethods = { "testSynchroBetweenThreePeers" })
-	public void testSynchroAfterTestsBetweenThreePeers() throws DatabaseException, InterruptedException {
+	public void testSynchroAfterTestsBetweenThreePeers() throws DatabaseException {
 		testSynchronisation();
 		if (centralDatabaseBackupReceiver!=null)
 			cleanObsoleteData(centralDatabaseBackupReceiver);
@@ -1912,8 +1912,7 @@ public abstract class CommonDecentralizedTests {
 			Method cleanObsoleteDataMethod=com.distrimind.ood.database.centraldatabaseapi.CentralDatabaseBackupReceiver.class.getDeclaredMethod("cleanObsoleteData");
 			cleanObsoleteDataMethod.setAccessible(true);
 			cleanObsoleteDataMethod.invoke(receiver);
-			Thread.sleep(1000);
-		} catch (NoSuchMethodException | IllegalAccessException | InterruptedException e) {
+		} catch (NoSuchMethodException | IllegalAccessException  e) {
 			throw new RuntimeException(e);
 		}
 		catch (InvocationTargetException e)
