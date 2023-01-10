@@ -303,7 +303,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 					}
 					return false;
 				}
-			}, "concernsDatabaseHost==%c and hostID!=%h", "c", false, "h", hook.getHostID());
+			}, "concernsDatabaseHost==:c and hostID!=:h", "c", false, "h", hook.getHostID());
 			if (lastTransactionID.get() == Long.MAX_VALUE)
 				lastTransactionID.set(-1L);
 			if (lastTransactionID.get() < getIDTable().getLastTransactionID()) {
@@ -333,7 +333,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 						}
 						return false;
 					}
-				}, "id>%lastID" + sb, parameters);
+				}, "id>:lastID" + sb, parameters);
 				updateRecords(new AlterRecordFilter<>() {
 
 					@Override
@@ -343,7 +343,7 @@ final class DatabaseTransactionEventsTable extends Table<DatabaseTransactionEven
 							update("concernedHosts", _record.concernedHosts);
 						}
 					}
-				}, "id>%lastID" + sb, parameters);
+				}, "id>:lastID" + sb, parameters);
 
 
 

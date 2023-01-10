@@ -397,10 +397,10 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 								database = centralDatabaseBackupReceiver.databaseBackupPerClientTable.addRecord(new DatabaseBackupPerClientTable.Record(clientSource, message.getPackageString(), chosenBackup.get().lastFileBackupPartUTC, chosenBackup.get().getLastValidatedAndEncryptedID()));
 								long startPos = 0;
 								long sizeRow = 1000;
-								long rowNumber = centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getRecordsNumber("database=%d", "d", chosenBackup.get());
+								long rowNumber = centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getRecordsNumber("database=:d", "d", chosenBackup.get());
 								FileReferenceManager fileReferenceManager = centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getDatabaseWrapper().getFileReferenceManager();
 								do {
-									List<EncryptedBackupPartReferenceTable.Record> l = centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getPaginatedRecords(startPos, sizeRow, "database=%d", "d", chosenBackup.get());
+									List<EncryptedBackupPartReferenceTable.Record> l = centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getPaginatedRecords(startPos, sizeRow, "database=:d", "d", chosenBackup.get());
 									for (EncryptedBackupPartReferenceTable.Record r : l) {
 										FileRecord fr = fileReferenceManager.incrementReferenceFile(r.getFileId());
 										centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.addRecord(new EncryptedBackupPartReferenceTable.Record(database, r.getFileTimeUTC(), r.isReferenceFile(), fr.getFileId(), r.getMetaData()));
@@ -413,7 +413,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 									public boolean nextRecord(LastValidatedDistantIDPerClientTable.Record _record) {
 										return message.getAcceptedDataSources().contains(_record.getDistantClient().getClientID());
 									}
-								}, "client=%c and distantClient!=%c and distantClient!=%c2", "c", chosenBackup.get().getClient(), "c2", clientSource)) {
+								}, "client=:c and distantClient!=:c and distantClient!=:c2", "c", chosenBackup.get().getClient(), "c2", clientSource)) {
 									lastValidatedAndEncryptedDistantIdsPerHost.put(r.getDistantClient().getClientID(), r.getLastValidatedAndEncryptedDistantID());
 									try {
 										centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.addRecord(new LastValidatedDistantIDPerClientTable.Record(clientSource, r.getDistantClient(), r.getLastValidatedAndEncryptedDistantID()));
@@ -433,7 +433,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 							return Integrity.FAIL;
 						}
 
-						//centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecords("client=%c and packageString=%ps", "c",chosenBackup.get().getClient(), "ps", message.getPackageString());
+						//centralDatabaseBackupReceiver.databaseBackupPerClientTable.getRecords("client=:c and packageString=:ps", "c",chosenBackup.get().getClient(), "ps", message.getPackageString());
 						Reference<Long> referenceUTC = new Reference<>();
 						centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getRecords(new Filter<EncryptedBackupPartReferenceTable.Record>() {
 							@Override
@@ -443,7 +443,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 								}
 								return false;
 							}
-						}, "database=%d and isReferenceFile=%irf", "d", database, "irf", true);
+						}, "database=:d and isReferenceFile=:irf", "d", database, "irf", true);
 						if (lastValidatedAndEncryptedDistantIdsPerHost==null) {
 							Map<DecentralizedValue, byte[]> l = new HashMap<>();
 							centralDatabaseBackupReceiver.lastValidatedDistantIDPerClientTable.getRecords(new Filter<LastValidatedDistantIDPerClientTable.Record>() {
@@ -453,7 +453,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 										l.put(_record.getDistantClient().getClientID(), _record.getLastValidatedAndEncryptedDistantID());
 									return false;
 								}
-							}, "client=%c and distantClient!=%c", "c", database.getClient());
+							}, "client=:c and distantClient!=:c", "c", database.getClient());
 							lastValidatedAndEncryptedDistantIdsPerHost=l;
 						}
 
@@ -820,7 +820,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 						found.set(_record);
 					return false;
 				}
-			}, "database=%d and fileTimeUTC<%ts", "d", databaseBackup, "ts", fileCoordinate.getTimeStampUTC());
+			}, "database=:d and fileTimeUTC<:ts", "d", databaseBackup, "ts", fileCoordinate.getTimeStampUTC());
 		}
 		else {
 			centralDatabaseBackupReceiver.encryptedBackupPartReferenceTable.getRecords(new Filter<>() {
@@ -830,7 +830,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 						found.set(_record);
 					return false;
 				}
-			}, "database=%d and fileTimeUTC>%ts", "d", databaseBackup, "ts", fileCoordinate.getTimeStampUTC());
+			}, "database=:d and fileTimeUTC>:ts", "d", databaseBackup, "ts", fileCoordinate.getTimeStampUTC());
 		}
 
 		if (found.get()==null)
@@ -853,7 +853,7 @@ public abstract class CentralDatabaseBackupReceiverPerPeer {
 				}
 				return false;
 			}
-		}, "client.account=%a and packageString=%p", "a", connectedClientRecord.getAccount(), "p", packageString);
+		}, "client.account=:a and packageString=:p", "a", connectedClientRecord.getAccount(), "p", packageString);
 		return res.get();
 	}
 

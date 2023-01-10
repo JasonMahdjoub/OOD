@@ -387,7 +387,7 @@ public class DatabaseTasksManager {
 			public void nextRecord(ExecutedTasksTable.Record _record) throws DatabaseException {
 				update("toRemove", true);
 			}
-		}, "databasePackageName=%databasePackageLoading", "databasePackageLoading", databasePackageNameLoading.getName());
+		}, "databasePackageName=:databasePackageLoading", "databasePackageLoading", databasePackageNameLoading.getName());
 	}
 	@SuppressWarnings("unused")
 	void endPackageLoading() throws DatabaseException {
@@ -398,7 +398,7 @@ public class DatabaseTasksManager {
 			public boolean nextRecord(ExecutedTasksTable.Record _record) {
 				return true;
 			}
-		}, "databasePackageName=%databasePackageLoading and toRemove=%b", "databasePackageLoading", currentDatabasePackageLoading.getName(), "b", true);
+		}, "databasePackageName=:databasePackageLoading and toRemove=:b", "databasePackageLoading", currentDatabasePackageLoading.getName(), "b", true);
 		this.currentDatabasePackageLoading =null;
 	}
 	private ZoneOffset getZoneOffset(Table<?> table, String offsetId, String zoneId) throws DatabaseException {

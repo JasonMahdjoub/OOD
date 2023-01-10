@@ -488,7 +488,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 								return false;
 							}
 
-						}, "hook=%hook", "hook", h);
+						}, "hook=:hook", "hook", h);
 				if (actualLastID.get() > h.getLastValidatedLocalTransactionID()) {
 					getDatabaseDistantTransactionEvent()
 							.getRecords(new Filter<>() {
@@ -505,7 +505,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 												}
 												return false;
 											}
-										}, "localID<=%maxLocalID AND localID>%minLocalID and peersInformedFull=%peersInformedFull",
+										}, "localID<=:maxLocalID AND localID>:minLocalID and peersInformedFull=:peersInformedFull",
 									"maxLocalID", actualLastID.get(), "minLocalID",
 									h.getLastValidatedLocalTransactionID(), "peersInformedFull",
 									Boolean.FALSE);
@@ -522,7 +522,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				}
 				return false;
 			}
-		}, "concernsDatabaseHost=%c and hostID not in %excludedHooks", "c", false, "excludedHooks", excludedHooks);
+		}, "concernsDatabaseHost=:c and hostID not in :excludedHooks", "c", false, "excludedHooks", excludedHooks);
 		for (DatabaseHooksTable.Record h : toUpdate) {
 			updateRecord(h, "lastValidatedLocalTransactionID", h.getLastValidatedLocalTransactionID());
 		}
@@ -985,7 +985,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 					stopTableParsing();
 					return false;
 				}
-			}, "concernsDatabaseHost=%b", "b", true);
+			}, "concernsDatabaseHost=:b", "b", true);
 			localHost = res.get();
 		}
 		return localHost;
@@ -1034,7 +1034,7 @@ final class DatabaseHooksTable extends Table<DatabaseHooksTable.Record> {
 				if (!hs.equals(_record.databasePackageNamesThatDoNotUseExternalBackup))
 					update("databasePackageNamesThatDoNotUseExternalBackup", hs);
 			}
-		}, "hostID=%hid", "hid", hostSource);
+		}, "hostID=:hid", "hid", hostSource);
 	}
 	void offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(AuthenticatedMessageDestinedToCentralDatabaseBackup message, AbstractSecureRandom random, EncryptionProfileProvider encryptionProfileProvider) throws DatabaseException {
 		offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(getLocalDatabaseHost(), message, random, encryptionProfileProvider);

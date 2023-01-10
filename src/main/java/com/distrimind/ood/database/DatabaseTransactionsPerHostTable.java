@@ -136,7 +136,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 			public Object run(DatabaseWrapper _sql_connection) throws DatabaseException {
 
 				DatabaseTransactionsPerHostTable.this
-						.removeRecordsWithCascade("hook.id=%id", "id", hook.getID());
+						.removeRecordsWithCascade("hook.id=:id", "id", hook.getID());
 				getDatabaseTransactionEventsTable().removeUnusedTransactions();
 				return null;
 			}
@@ -179,7 +179,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									com.distrimind.ood.database.DatabaseTransactionsPerHostTable.Record _record) {
 								return _record.getTransaction().isConcernedByOneOf(removedPackages);
 							}
-						}, "hook.id=%id", "id", hook.getID());
+						}, "hook.id=:id", "id", hook.getID());
 				getDatabaseTransactionEventsTable().removeUnusedTransactions();
 				return null;
 			}
@@ -254,7 +254,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 				@Override
 				public Long run() throws Exception {
-					removeRecords("transaction.id<=%lastID AND hook=%hook", "lastID", lastID, "hook", hook);
+					removeRecords("transaction.id<=:lastID AND hook=:hook", "lastID", lastID, "hook", hook);
 					final AtomicLong actualLastID = new AtomicLong(Long.MAX_VALUE);
 					getRecords(new Filter<>() {
 
@@ -267,7 +267,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 							return false;
 						}
 
-					}, "hook=%hook", "hook", hook);
+					}, "hook=:hook", "hook", hook);
 					if (actualLastID.get() > lastID) {
 						getDatabaseDistantTransactionEvent()
 								.getRecords(new Filter<>() {
@@ -284,7 +284,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 													}
 													return false;
 												}
-											}, "localID<%maxLocalID AND localID>=%minLocalID and peersInformedFull=%peersInformedFull",
+											}, "localID<:maxLocalID AND localID>=:minLocalID and peersInformedFull=:peersInformedFull",
 										"maxLocalID", actualLastID.get() - 1, "minLocalID",
 										lastID + 1, "peersInformedFull", Boolean.FALSE);
 					}
@@ -311,7 +311,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 									}
 								}
 
-							}, "localID<=%lastID", "lastID", actualLastID.get());
+							}, "localID<=:lastID", "lastID", actualLastID.get());
 					getDatabaseTransactionEventsTable().removeTransactionsFromLastID();
 
 					return actualLastID.get();
@@ -362,11 +362,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		};
 		if (eventType==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 		{
-			getDatabaseDistantEventsTable().getRecords(filter, "concernedTable==%concernedTable",
+			getDatabaseDistantEventsTable().getRecords(filter, "concernedTable==:concernedTable",
 					"concernedTable", concernedTable);
 		}
 		else
-			getDatabaseDistantEventsTable().getRecords(filter, "concernedTable==%concernedTable AND concernedSerializedPrimaryKey==%concernedSerializedPrimaryKey",
+			getDatabaseDistantEventsTable().getRecords(filter, "concernedTable==:concernedTable AND concernedSerializedPrimaryKey==:concernedSerializedPrimaryKey",
 					"concernedTable", concernedTable, "concernedSerializedPrimaryKey", keys);
 
 		return collision.get();
@@ -397,11 +397,11 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 		};
 		if (eventType==DatabaseEventType.REMOVE_ALL_RECORDS_WITH_CASCADE)
 		{
-			getDatabaseEventsTable().getRecords(filter, "concernedTable==%concernedTable",
+			getDatabaseEventsTable().getRecords(filter, "concernedTable==:concernedTable",
 					"concernedTable", concernedTable);
 		}
 		else {
-			getDatabaseEventsTable().getRecords(filter, "concernedTable==%concernedTable AND concernedSerializedPrimaryKey==%concernedSerializedPrimaryKey",
+			getDatabaseEventsTable().getRecords(filter, "concernedTable==:concernedTable AND concernedSerializedPrimaryKey==:concernedSerializedPrimaryKey",
 					"concernedTable", concernedTable, "concernedSerializedPrimaryKey", keys);
 		}
 		return collisionDetected.get();
@@ -476,9 +476,9 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 
 								};
 								if (concernedHosts.isEmpty())
-									getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=%cdh or hostID=%dphid", "cdh", true, "dphid", directPeer.getHostID());
+									getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=:cdh or hostID=:dphid", "cdh", true, "dphid", directPeer.getHostID());
 								else
-									getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=%cdh or hostID=%dphid or hostID not in %chs", "cdh", true, "dphid", directPeer.getHostID(), "chs", concernedHosts);
+									getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=:cdh or hostID=:dphid or hostID not in :chs", "cdh", true, "dphid", directPeer.getHostID(), "chs", concernedHosts);
 
 								distantTransaction.setPeersInformed(l);
 							}
@@ -1267,7 +1267,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 																									 return false;
 																								 }
 
-																							 }, "transaction=%transaction", new Object[]{"transaction", _record.getTransaction()},
+																							 }, "transaction=:transaction", new Object[]{"transaction", _record.getTransaction()},
 														  true, "position");
 												  oos.writeByte(EXPORT_DIRECT_TRANSACTION_FINISHED);
 												  if (number.incrementAndGet() >= maxEventsRecords) {
@@ -1279,7 +1279,7 @@ final class DatabaseTransactionsPerHostTable extends Table<DatabaseTransactionsP
 												  throw DatabaseException.getDatabaseException(e);
 											  }
 										  }
-									  }, "transaction.id<%nearNextLocalID AND transaction.id>%previousNearTransactionID AND hook=%hook",
+									  }, "transaction.id<:nearNextLocalID AND transaction.id>:previousNearTransactionID AND hook=:hook",
 							new Object[] { "nearNextLocalID", nearNextLocalID.get(),
 									"previousNearTransactionID", currentTransactionID, "hook", hook },
 							true, "transaction.id");

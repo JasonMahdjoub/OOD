@@ -404,10 +404,10 @@ public abstract class TestDatabase {
 		Assert.assertEquals(r2.pk2, 1);
 		Assert.assertEquals(table1.getRecordsNumber(), 1);
 		Assert.assertEquals(table3.getRecordsNumber(), 1);
-		Assert.assertEquals(table1.getRecordsNumber("int_value=%v", "v", 3), 1);
-		Assert.assertEquals(table1.getRecordsNumber("int_value=%v", "v", 4), 0);
-		Assert.assertEquals(table3.getRecordsNumber("int_value=%v", "v", 3), 1);
-		Assert.assertEquals(table3.getRecordsNumber("int_value=%v", "v", 4), 0);
+		Assert.assertEquals(table1.getRecordsNumber("int_value=:v", "v", 3), 1);
+		Assert.assertEquals(table1.getRecordsNumber("int_value=:v", "v", 4), 0);
+		Assert.assertEquals(table3.getRecordsNumber("int_value=:v", "v", 3), 1);
+		Assert.assertEquals(table3.getRecordsNumber("int_value=:v", "v", 4), 0);
 	}
 
 	@Test(dependsOnMethods = { "firstAdd" })

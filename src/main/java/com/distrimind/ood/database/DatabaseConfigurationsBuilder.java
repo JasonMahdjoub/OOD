@@ -406,7 +406,7 @@ public class DatabaseConfigurationsBuilder {
 				Set<DecentralizedValue> peersID = configurations.getDistantPeers();
 				if (peersID != null && peersID.size() > 0) {
 					for (DecentralizedValue dv : peersID) {
-						if (!wrapper.getDatabaseHooksTable().hasRecords("concernsDatabaseHost=%cdh and hostID=%h", "cdh", false, "h", dv)) {
+						if (!wrapper.getDatabaseHooksTable().hasRecords("concernsDatabaseHost=:cdh and hostID=:h", "cdh", false, "h", dv)) {
 							wrapper.getDatabaseHooksTable().initDistantHook(dv);
 							if (peersAdded == null)
 								peersAdded = new HashSet<>();
@@ -465,7 +465,7 @@ public class DatabaseConfigurationsBuilder {
 									}
 									return false;
 								}
-							}, "concernsDatabaseHost=%cdh", "cdh", false);
+							}, "concernsDatabaseHost=:cdh", "cdh", false);
 						}
 					}
 
@@ -482,7 +482,7 @@ public class DatabaseConfigurationsBuilder {
 								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookSynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), hm, c.getDistantPeersThatCanBeSynchronizedWithThisDatabase()), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}
-					}, "concernsDatabaseHost=%cdh", "cdh", false);
+					}, "concernsDatabaseHost=:cdh", "cdh", false);
 				}
 				for (DatabaseConfiguration c : packagesToSynchronize) {
 					Map<String, Boolean> hm = new HashMap<>();
@@ -538,9 +538,9 @@ public class DatabaseConfigurationsBuilder {
 					}
 				};
 				if (currentTransaction.removedPeersID == null)
-					wrapper.getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=%cdh", "cdh", false);
+					wrapper.getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=:cdh", "cdh", false);
 				else
-					wrapper.getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=%cdh and hostID not in %removedPeersID", "cdh", false, "removedPeersID", currentTransaction.removedPeersID);
+					wrapper.getDatabaseHooksTable().getRecords(f, "concernsDatabaseHost=:cdh and hostID not in :removedPeersID", "cdh", false, "removedPeersID", currentTransaction.removedPeersID);
 
 				if (currentTransaction.propagate) {
 					wrapper.getDatabaseHooksTable().updateRecords(new AlterRecordFilter<>() {
@@ -550,7 +550,7 @@ public class DatabaseConfigurationsBuilder {
 								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookDesynchronizeRequest(configurations.getLocalPeer(), _record.getHostID(), e.getKey(), e.getValue()), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
 							}
 						}
-					}, "concernsDatabaseHost=%cdh", "cdh", false);
+					}, "concernsDatabaseHost=:cdh", "cdh", false);
 
 					for (Map.Entry<Set<String>, Set<DecentralizedValue>> e : packagesToUnsynchronize.entrySet()) {
 
@@ -592,7 +592,7 @@ public class DatabaseConfigurationsBuilder {
 								removeLocalNow.set(false);
 								_record.offerNewAuthenticatedP2PMessage(wrapper, new HookRemoveRequest(configurations.getLocalPeer(), _record.getHostID(), peerIDToRemove), getSecureRandom(), protectedSignatureProfileProviderForAuthenticatedP2PMessages, this);
 							}
-						}, "concernsDatabaseHost=%cdh", "cdh", false);
+						}, "concernsDatabaseHost=:cdh", "cdh", false);
 						if (configurations.useCentralBackupDatabase() || (currentTransaction.usedCentralBackupDatabase && wrapper.getSynchronizer() != null && wrapper.getSynchronizer().isInitializedWithCentralBackup())) {
 							wrapper.getDatabaseHooksTable().offerNewAuthenticatedMessageDestinedToCentralDatabaseBackup(
 									new PeerToRemoveMessageDestinedToCentralDatabaseBackup(getConfigurations().getLocalPeer(), getConfigurations().getCentralDatabaseBackupCertificate(), peerIDToRemove),
@@ -1085,7 +1085,7 @@ public class DatabaseConfigurationsBuilder {
 													}
 													return false;
 												}
-											}, "concernsDatabaseHost=%c", "c", false);
+											}, "concernsDatabaseHost=:c", "c", false);
 											if (hostThatApplyRestoration.get() != null)
 												wrapper.getSynchronizer().notifyOtherPeersThatDatabaseRestorationWasDone(c.getDatabaseSchema().getPackage(), timeUTCInMs, System.currentTimeMillis(), hostThatApplyRestoration.get(), c.isChooseNearestBackupIfNoBackupMatch());
 

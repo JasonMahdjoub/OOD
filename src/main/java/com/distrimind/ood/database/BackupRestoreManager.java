@@ -1464,7 +1464,7 @@ public class BackupRestoreManager {
 									}
 								}
 							}
-						}, "concernsDatabaseHost=%c", "c", false);
+						}, "concernsDatabaseHost=:c", "c", false);
 						return null;
 					}
 

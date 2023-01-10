@@ -177,7 +177,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 					return false;
 			}
 
-			boolean res=hooks.hasRecords("hostID!=%hid and hostID not in %l", "hid", hook.getHostID(), "l", l);
+			boolean res=hooks.hasRecords("hostID!=:hid and hostID not in :l", "hid", hook.getHostID(), "l", l);
 			peersInformedFull = !res;
 			return res;
 		}
@@ -295,7 +295,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 																					 n.set(n.get() + 1);
 																					 return false;
 																				 }
-																			 }, "transaction=%transaction", new Object[]{"transaction", _record}, true,
+																			 }, "transaction=:transaction", new Object[]{"transaction", _record}, true,
 																  "position");
 												  if (n.get() == 0)
 													  throw new IllegalAccessError();
@@ -311,7 +311,7 @@ final class DatabaseDistantTransactionEvent extends Table<DatabaseDistantTransac
 										  throw DatabaseException.getDatabaseException(e);
 									  }
 								  }
-							  }, "hook!=%hook AND localID>=%currentLocalID",
+							  }, "hook!=%hook AND localID>=:currentLocalID",
 					new Object[] { "hook", hook, "currentLocalID", fromTransactionID}, true, "id");
 			return number.get();
 		} catch (Exception e) {
