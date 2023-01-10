@@ -41,10 +41,8 @@ import com.distrimind.ood.database.*;
 import com.distrimind.ood.database.exceptions.DatabaseException;
 import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
 import com.distrimind.ood.database.exceptions.FieldDatabaseException;
-import com.distrimind.util.crypto.WrappedEncryptedASymmetricPrivateKeyString;
-import com.distrimind.util.crypto.WrappedEncryptedSymmetricSecretKeyString;
-import com.distrimind.util.crypto.WrappedHashedPasswordString;
-import com.distrimind.util.crypto.WrappedPassword;
+import com.distrimind.util.InvalidEncodedValue;
+import com.distrimind.util.crypto.*;
 import com.distrimind.util.data_buffers.WrappedSecretString;
 import com.distrimind.util.data_buffers.WrappedString;
 import com.distrimind.util.io.RandomInputStream;
@@ -75,7 +73,11 @@ public class StringFieldAccessor extends FieldAccessor {
 		sql_fields = new SqlField[1];
 		long l=limit;
 		if (l<=0) {
-			if (WrappedEncryptedASymmetricPrivateKeyString.class.isAssignableFrom(field.getType()))
+			if (WrappedHashedValueInBase64StringFormat.class.isAssignableFrom(field.getType()))
+			{
+				l=WrappedHashedValueInBase64StringFormat.MAX_CHARS_NUMBER;
+			}
+			else if (WrappedEncryptedASymmetricPrivateKeyString.class.isAssignableFrom(field.getType()))
 			{
 				l=WrappedEncryptedASymmetricPrivateKeyString.MAX_CHARS_NUMBER;
 			}
@@ -119,18 +121,21 @@ public class StringFieldAccessor extends FieldAccessor {
 		try {
 
 			field.set(_class_instance, toObject(_field_instance));
-		} catch (IllegalArgumentException | IllegalAccessException e) {
+		} catch (IllegalArgumentException | IllegalAccessException | InvalidEncodedValue e) {
 			throw new DatabaseException("Unexpected exception.", e);
 		}
 	}
 	@SuppressWarnings("deprecation")
-	private Object toObject(Object _field_instance)
-	{
+	private Object toObject(Object _field_instance) throws InvalidEncodedValue {
 		if (WrappedString.class.isAssignableFrom(field.getType()) && _field_instance instanceof String)
 		{
 			if (WrappedEncryptedASymmetricPrivateKeyString.class.isAssignableFrom(field.getType()))
 			{
 				_field_instance=new WrappedEncryptedASymmetricPrivateKeyString((String)_field_instance);
+			}
+			else if (WrappedHashedValueInBase64StringFormat.class.isAssignableFrom(field.getType()))
+			{
+				_field_instance=new WrappedHashedValueInBase64StringFormat((String)_field_instance);
 			}
 			else if (WrappedEncryptedSymmetricSecretKeyString.class.isAssignableFrom(field.getType()))
 			{
@@ -196,6 +201,7 @@ public class StringFieldAccessor extends FieldAccessor {
 
 	private static final Class<?>[] compatible_classes = { String.class,
 			WrappedString.class,
+			WrappedHashedValueInBase64StringFormat.class,
 			WrappedEncryptedASymmetricPrivateKeyString.class,
 			WrappedEncryptedSymmetricSecretKeyString.class,
 			WrappedHashedPasswordString.class,

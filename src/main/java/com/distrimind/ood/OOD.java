@@ -68,6 +68,7 @@ public class OOD {
 							new Description(3, 2, 2, Version.Type.STABLE, 0, "2023-01-10")
 									.addItem(INTERNAL_CHANGE, "Update Java language level to Java 11")
 									.addItem(INTERNAL_CHANGE, "Update Utils to 5.25.1 STABLE")
+									.addItem(NEW_FEATURE, "Add serialization of hashed values")
 					)
 					.addDescription(
 							new Description(3, 2, 1, Version.Type.STABLE, 0, "2022-12-23")
