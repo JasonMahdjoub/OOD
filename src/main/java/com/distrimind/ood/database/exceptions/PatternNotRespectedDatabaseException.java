@@ -1,4 +1,4 @@
-package com.distrimind.ood.database.fieldaccessors;
+package com.distrimind.ood.database.exceptions;
 /*
 Copyright or © or Corp. Jason Mahdjoub (01/04/2013)
 
@@ -35,18 +35,13 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL-C license and that you accept its terms.
  */
 
-import com.distrimind.ood.database.exceptions.PatternNotRespectedDatabaseException;
-import com.distrimind.util.InvalidEncodedValue;
-
 /**
  * @author Jason Mahdjoub
  * @version 1.0
  * @since OOD 3.3.0
  */
-public interface FieldAccessorWithStringPattern {
-
-	void checkPattern(Object value) throws InvalidEncodedValue, PatternNotRespectedDatabaseException;
-
-	String getStringPattern();
-
+public class PatternNotRespectedDatabaseException extends ConstraintsNotRespectedDatabaseException {
+	public PatternNotRespectedDatabaseException(String stringPattern, CharSequence value) {
+		super("Pattern "+stringPattern+" is not validated with string "+value);
+	}
 }

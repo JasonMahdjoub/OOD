@@ -115,7 +115,7 @@ public @interface Field {
 
 	/**
 	 *
-	 * @return a regex pattern as a constraint to check when altering the concerned field
+	 * @return a regex pattern as a constraint to check when altering the concerned field. Works only with String and WrappedString fields.
 	 */
 	String regexPattern() default "";
 }

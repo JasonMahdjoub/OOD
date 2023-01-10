@@ -38,10 +38,7 @@ knowledge of the CeCILL-C license and that you accept its terms.
 package com.distrimind.ood.database.fieldaccessors;
 
 import com.distrimind.ood.database.*;
-import com.distrimind.ood.database.exceptions.ConstraintsNotRespectedDatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseException;
-import com.distrimind.ood.database.exceptions.DatabaseIntegrityException;
-import com.distrimind.ood.database.exceptions.FieldDatabaseException;
+import com.distrimind.ood.database.exceptions.*;
 import com.distrimind.util.InvalidEncodedValue;
 import com.distrimind.util.crypto.*;
 import com.distrimind.util.data_buffers.WrappedSecretString;
@@ -398,7 +395,7 @@ public class StringFieldAccessor extends FieldAccessor implements FieldAccessorW
 
 
 	@Override
-	public void checkPattern(Object value) throws ConstraintsNotRespectedDatabaseException, InvalidEncodedValue {
+	public void checkPattern(Object value) throws PatternNotRespectedDatabaseException, InvalidEncodedValue {
 		CharSequence s;
 		if (value instanceof CharSequence)
 			s=(CharSequence)value;
@@ -409,7 +406,7 @@ public class StringFieldAccessor extends FieldAccessor implements FieldAccessorW
 		if (pattern != null) {
 			synchronized (pattern) {
 				if (!pattern.matcher(s).matches())
-					throw new ConstraintsNotRespectedDatabaseException("Pattern "+stringPattern+" is not validated with string "+s);
+					throw new PatternNotRespectedDatabaseException(stringPattern, s);
 			}
 		}
 	}
