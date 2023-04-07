@@ -1,4 +1,0 @@
-rootProject.name='AndroidDriverForOOD'
-include ':app'
-
-include ':ood-android-driver'
